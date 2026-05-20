@@ -214,7 +214,7 @@ def predict():
         return jsonify({
             'success': True,
             'predicted_class': top_class,
-            'confidence': round(float(probs[top_idx].item() * 100), 1),
+            'confidence': round(top_prob * 100, 1),
             'emoji': top_meta['emoji'],
             'desc': top_meta['desc'],
             'color': top_meta['color'],
