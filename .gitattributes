@@ -1,0 +1,13 @@
+* text=auto
+*.py text
+README.md text
+vercel.json text
+requirements.txt text
+*.ps1 text eol=crlf
+
+# Binary files
+*.pth binary
+*.pt binary
+
+# Avoid storing large dataset/archive files in Git
+dataset/** -text

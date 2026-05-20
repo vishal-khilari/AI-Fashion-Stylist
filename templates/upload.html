@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StyleSense — Evaluate {{ category }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0e0e0e;
+            --surface: #161616;
+            --border: #2a2a2a;
+            --text: #e8e4dc;
+            --muted: #6b6b6b;
+            --accent: #c9a96e;
+            --accent-glow: rgba(201, 169, 110, 0.2);
+            --error: #e74c3c;
+            --success: #5cb85c;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: "DM Mono", monospace;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+            overflow-x: hidden;
+        }
+
+        /* Background Noise */
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: -1;
+            opacity: 0.4;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 700px;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .nav-back {
+            display: inline-flex;
+            align-items: center;
+            color: var(--muted);
+            text-decoration: none;
+            font-size: 12px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin-bottom: 30px;
+            transition: color 0.3s ease;
+        }
+
+        .nav-back:hover {
+            color: var(--accent);
+        }
+
+        .logo-subtitle {
+            font-size: 11px;
+            letter-spacing: 0.4em;
+            color: var(--accent);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        h1 {
+            font-family: "Cormorant Garamond", serif;
+            font-size: clamp(32px, 8vw, 48px);
+            font-weight: 300;
+            letter-spacing: -0.01em;
+            line-height: 1;
+        }
+
+        h1 em {
+            font-style: italic;
+            color: var(--accent);
+        }
+
+        /* Upload Section */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 30px;
+            transition: border-color 0.3s ease;
+        }
+
+        .upload-area {
+            border: 1px dashed var(--border);
+            padding: 50px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .upload-area:hover, .upload-area.dragover {
+            border-color: var(--accent);
+            background: rgba(201, 169, 110, 0.02);
+        }
+
+        .upload-icon {
+            font-size: 40px;
+            margin-bottom: 15px;
+            opacity: 0.6;
+        }
+
+        #file-input { display: none; }
+
+        /* Preview State */
+        #preview-container {
+            display: none;
+            margin-top: 20px;
+        }
+
+        .preview-box {
+            position: relative;
+            border-radius: 4px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        #preview-img {
+            width: 100%;
+            max-height: 500px;
+            object-fit: contain;
+            background: #000;
+            display: block;
+        }
+
+        .preview-actions {
+            margin-top: 15px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        /* Buttons */
+        button {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 15px;
+            font-family: inherit;
+            font-size: 12px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        button:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        button.primary {
+            background: var(--accent);
+            color: var(--bg);
+            border-color: var(--accent);
+        }
+
+        button.primary:hover {
+            background: #d4b98a;
+            transform: translateY(-1px);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Results Display */
+        #results-container {
+            display: none;
+            margin-top: 30px;
+            animation: slideUp 0.5s ease-out;
+        }
+
+        .main-result {
+            display: flex;
+            align-items: center;
+            gap: 25px;
+            padding-bottom: 25px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 25px;
+        }
+
+        .result-emoji {
+            font-size: 60px;
+            background: var(--bg);
+            width: 100px;
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            border: 1px solid var(--border);
+        }
+
+        .result-text h2 {
+            font-family: "Cormorant Garamond", serif;
+            font-size: 36px;
+            font-weight: 400;
+            margin-bottom: 5px;
+        }
+
+        .confidence-tag {
+            display: inline-block;
+            font-size: 10px;
+            background: var(--accent-glow);
+            color: var(--accent);
+            padding: 4px 8px;
+            border-radius: 20px;
+            margin-bottom: 10px;
+        }
+
+        /* Confidence Bars */
+        .score-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .score-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .score-label {
+            width: 100px;
+            font-size: 11px;
+            color: var(--muted);
+        }
+
+        .bar-bg {
+            flex: 1;
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .bar-fill {
+            height: 100%;
+            width: 0%;
+            transition: width 1s cubic-bezier(0.17, 0.67, 0.83, 0.67);
+        }
+
+        .score-val {
+            width: 40px;
+            text-align: right;
+            font-size: 11px;
+            color: var(--accent);
+        }
+
+        /* Acceptance Notification */
+        #notification {
+            display: none;
+            padding: 20px;
+            margin-top: 25px;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 14px;
+            letter-spacing: 0.05em;
+            animation: slideUp 0.5s ease-out;
+            font-weight: 400;
+        }
+
+        #notification.accepted {
+            background: rgba(92, 184, 92, 0.1);
+            border: 1px solid var(--success);
+            color: var(--success);
+        }
+
+        #notification.rejected {
+            background: rgba(231, 76, 60, 0.1);
+            border: 1px solid var(--error);
+            color: var(--error);
+        }
+
+        /* Loading Spinner */
+        .loader {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            width: 30px;
+            height: 30px;
+            border: 2px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { 
+            from { opacity: 0; transform: translateY(20px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
+
+        #error-msg {
+            color: var(--error);
+            font-size: 11px;
+            text-align: center;
+            margin-top: 15px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="/" class="nav-back">← Back to Categories</a>
+    <header>
+        <div class="logo-subtitle">Evaluating</div>
+        <h1><em>{{ category }}</em> Attire</h1>
+    </header>
+
+    <div class="card">
+        <!-- Initial Upload State -->
+        <div id="upload-container">
+            <div class="upload-area" id="drop-zone" onclick="document.getElementById('file-input').click()">
+                <div class="upload-icon">✦</div>
+                <p>Drop an image or click to browse</p>
+                <p style="font-size: 10px; color: var(--muted); margin-top: 10px;">JPG, PNG or WEBP</p>
+            </div>
+            <input type="file" id="file-input" accept="image/*">
+        </div>
+
+        <!-- Preview State -->
+        <div id="preview-container">
+            <div class="preview-box">
+                <img id="preview-img" src="">
+            </div>
+            <div class="preview-actions">
+                <button onclick="resetUI()">Cancel</button>
+                <button class="primary" id="analyze-btn" onclick="performInference()">Evaluate Style</button>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div class="loader" id="loader">
+            <div class="spinner"></div>
+            <p style="font-size: 10px; letter-spacing: 2px;">PROCESSING...</p>
+        </div>
+
+        <!-- Error Message -->
+        <div id="error-msg"></div>
+
+        <!-- Results State -->
+        <div id="results-container">
+            <!-- Notification Banner -->
+            <div id="notification"></div>
+
+            <div class="main-result" style="margin-top: 25px;">
+                <div class="result-emoji" id="res-emoji">?</div>
+                <div class="result-text">
+                    <span class="confidence-tag" id="res-conf">0% Match</span>
+                    <h2 id="res-class">Unknown</h2>
+                    <p id="res-desc" style="font-size: 12px; color: var(--muted);"></p>
+                </div>
+            </div>
+
+            <div class="score-list" id="score-list">
+                <!-- Bars added dynamically -->
+            </div>
+
+            <button style="width: 100%; margin-top: 30px;" onclick="resetUI()">Try Another</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const fileInput = document.getElementById('file-input');
+    const dropZone = document.getElementById('drop-zone');
+    const uploadContainer = document.getElementById('upload-container');
+    const previewContainer = document.getElementById('preview-container');
+    const previewImg = document.getElementById('preview-img');
+    const resultsContainer = document.getElementById('results-container');
+    const loader = document.getElementById('loader');
+    const errorMsg = document.getElementById('error-msg');
+    const notification = document.getElementById('notification');
+    
+    let selectedFile = null;
+
+    // The target category provided by Flask template
+    const targetCategory = "{{ category }}";
+    // Map "Formals" from UI to "Formal" which is the model's class name
+    const backendTargetCategory = targetCategory === 'Formals' ? 'Formal' : targetCategory;
+
+    // File Handling
+    fileInput.onchange = e => {
+        if (e.target.files.length > 0) handleFile(e.target.files[0]);
+    };
+
+    // Drag and Drop
+    dropZone.ondragover = e => {
+        e.preventDefault();
+        dropZone.classList.add('dragover');
+    };
+
+    dropZone.ondragleave = () => dropZone.classList.remove('dragover');
+
+    dropZone.ondrop = e => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        if (e.dataTransfer.files.length > 0) handleFile(e.dataTransfer.files[0]);
+    };
+
+    function handleFile(file) {
+        if (!file.type.startsWith('image/')) {
+            showError('Please upload a valid image file.');
+            return;
+        }
+        selectedFile = file;
+        const reader = new FileReader();
+        reader.onload = e => {
+            previewImg.src = e.target.result;
+            uploadContainer.style.display = 'none';
+            previewContainer.style.display = 'block';
+            errorMsg.style.display = 'none';
+            notification.style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+    }
+
+    async function performInference() {
+        if (!selectedFile) return;
+
+        const formData = new FormData();
+        formData.append('image', selectedFile);
+
+        // UI State
+        previewContainer.style.display = 'none';
+        loader.style.display = 'block';
+        errorMsg.style.display = 'none';
+
+        try {
+            const response = await fetch('/predict', {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+
+            if (result.error) throw new Error(result.error);
+
+            // Populate Results
+            document.getElementById('res-emoji').innerText = result.emoji;
+            document.getElementById('res-class').innerText = result.predicted_class;
+            document.getElementById('res-class').style.color = result.color;
+            document.getElementById('res-conf').innerText = result.confidence + '% Match';
+            document.getElementById('res-desc').innerText = result.desc;
+
+            // Build Bars and calculate score for the selected category
+            const scoreList = document.getElementById('score-list');
+            scoreList.innerHTML = '';
+            
+            let selectedCategoryScore = 0;
+
+            result.scores.forEach(s => {
+                if (s.class === backendTargetCategory) {
+                    selectedCategoryScore = s.score;
+                }
+                const item = document.createElement('div');
+                item.className = 'score-item';
+                item.innerHTML = `
+                    <div class="score-label">${s.class}</div>
+                    <div class="bar-bg">
+                        <div class="bar-fill" style="width: 0%; background: ${s.color}"></div>
+                    </div>
+                    <div class="score-val">${Math.round(s.score)}%</div>
+                `;
+                scoreList.appendChild(item);
+            });
+
+            // Set Notification based on > 50% acceptance logic
+            if (selectedCategoryScore > 50) {
+                notification.className = 'notification accepted';
+                notification.innerHTML = `✓ ACCEPTED <br><span style="font-size: 11px; opacity: 0.8; font-weight: normal; margin-top: 5px; display: block;">This outfit meets the requirement for ${targetCategory} (${Math.round(selectedCategoryScore)}% match).</span>`;
+            } else {
+                notification.className = 'notification rejected';
+                notification.innerHTML = `✕ REJECTED <br><span style="font-size: 11px; opacity: 0.8; font-weight: normal; margin-top: 5px; display: block;">This outfit does not meet the requirement for ${targetCategory} (Only ${Math.round(selectedCategoryScore)}% match).</span>`;
+            }
+
+            // Transition
+            loader.style.display = 'none';
+            resultsContainer.style.display = 'block';
+            notification.style.display = 'block';
+
+            // Animate bars
+            setTimeout(() => {
+                const bars = document.querySelectorAll('.bar-fill');
+                result.scores.forEach((s, i) => {
+                    bars[i].style.width = s.score + '%';
+                });
+            }, 100);
+
+        } catch (err) {
+            loader.style.display = 'none';
+            previewContainer.style.display = 'block';
+            showError(err.message);
+        }
+    }
+
+    function showError(msg) {
+        errorMsg.innerText = 'Error: ' + msg;
+        errorMsg.style.display = 'block';
+    }
+
+    function resetUI() {
+        selectedFile = null;
+        fileInput.value = '';
+        uploadContainer.style.display = 'block';
+        previewContainer.style.display = 'none';
+        resultsContainer.style.display = 'none';
+        loader.style.display = 'none';
+        errorMsg.style.display = 'none';
+        notification.style.display = 'none';
+        document.getElementById('ai-feedback-box').style.display = 'none';
+    }
+
+    // Global mouse tracking for background glow
+    document.addEventListener('mousemove', (e) => {
+        document.body.style.setProperty('--mouse-x', `${e.clientX}px`);
+        document.body.style.setProperty('--mouse-y', `${e.clientY}px`);
+    });
+
+    // 3D Tilt Effect for cards and buttons
+    document.querySelectorAll('.card, button').forEach(el => {
+        el.addEventListener('mousemove', e => {
+            const rect = el.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2;
+            
+            const rotateX = ((y - centerY) / centerY) * -4; // Subtle tilt for bigger cards
+            const rotateY = ((x - centerX) / centerX) * 4;
+            
+            el.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.01, 1.01, 1.01)`;
+            if(el.tagName === 'BUTTON') {
+                el.style.boxShadow = `${-rotateY}px ${rotateX}px 15px rgba(201, 169, 110, 0.15)`;
+            }
+        });
+        
+        el.addEventListener('mouseleave', () => {
+            el.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)';
+            el.style.boxShadow = 'none';
+            el.style.transition = 'all 0.4s ease';
+        });
+        
+        el.addEventListener('mouseenter', () => {
+            el.style.transition = 'none';
+        });
+    });
+</script>
+
+</body>
+</html>

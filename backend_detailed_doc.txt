@@ -1,0 +1,93 @@
+# Backend API Integration Documentation
+
+## Project Overview
+This project is an AI-powered Fashion Stylist and Dress Classifier. The core system relies on a Python Flask backend that integrates a custom-trained PyTorch computer vision model (`dress_classifier.pth`). This model takes uploaded images of clothing and classifies them into distinct categories (e.g., Formal, Casual, Traditional) with a calculated confidence score. Additionally, the backend integrates with the Google Gemini API to act as a virtual stylist, generating dynamic, hyper-personalized styling advice and multi-piece outfit recommendations based on both the classified images and direct user queries.
+
+Use these specifications to connect to the backend endpoints.
+
+## API Endpoints
+
+### 1. Image Classification API
+- **Endpoint**: `POST /predict`
+- **Purpose**: Upload an image to classify clothing style and receive an AI-generated fashion compliment.
+- **Request Type**: `multipart/form-data`
+- **Request Payload**: 
+  - A file uploaded under the form field key: `'image'` (supports `.jpg`, `.png`, `.webp`).
+- **Success Response Format (HTTP 200)**:
+  ```json
+  {
+    "success": true,
+    "predicted_class": "Formal",
+    "confidence": 98.5,
+    "emoji": "👔",
+    "desc": "Sophisticated attire: Suits, blazers, and elegant dresses.",
+    "color": "#4a90d9",
+    "scores": [
+      {
+        "class": "Formal",
+        "score": 98.5,
+        "emoji": "👔",
+        "desc": "Sophisticated attire...",
+        "color": "#4a90d9"
+      }
+    ],
+    "ai_feedback": "That suit looks incredibly sharp! Pair it with a classic watch."
+  }
+  ```
+- **Error Responses (HTTP 400 or 500)**:
+  ```json
+  {
+    "error": "No image file provided" // or other error messages
+  }
+  ```
+
+### 2. Chatbot Stylist API
+- **Endpoint**: `POST /chat_api`
+- **Purpose**: Send a message to the AI stylist and receive exactly 3 structured outfit suggestions.
+- **Request Type**: `application/json`
+- **Request Payload**:
+  ```json
+  {
+    "message": "What should I wear for a summer wedding?"
+  }
+  ```
+- **Response Format (HTTP 200) - Suggestions Type**:
+  When the AI successfully generates suggestions, it returns a `type` of `"suggestions"` and a `data` array of exactly 3 objects:
+  ```json
+  {
+    "type": "suggestions",
+    "data": [
+      {
+        "outfit": "Light blue linen suit with a crisp white shirt.",
+        "footwear": "Brown leather loafers.",
+        "grooming": "Clean shaven or neatly trimmed beard.",
+        "accessories": "A patterned pocket square and a classic watch."
+      }
+    ]
+  }
+  ```
+- **Response Format (HTTP 200) - Text Fallback Type**:
+  If the AI has a direct text message (like missing API keys or inability to structure the JSON), it returns a `type` of `"text"`:
+  ```json
+  {
+    "type": "text",
+    "reply": "Please set your API key to chat with the stylist!"
+  }
+  ```
+- **Error Responses (HTTP 400 or 500)**:
+  ```json
+  {
+    "error": "No message provided" // or other error messages
+  }
+  ```
+
+### 3. Health Check API
+- **Endpoint**: `GET /health`
+- **Purpose**: Simple check to verify the server is running.
+- **Success Response (HTTP 200)**:
+  ```json
+  {
+    "status": "healthy",
+    "device": "cpu"
+  }
+  ```

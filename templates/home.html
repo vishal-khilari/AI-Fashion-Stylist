@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StyleSense — Fashion Classifier</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+    <style>
+        :root {
+            --bg: #0e0e0e;
+            --surface: #161616;
+            --border: #2a2a2a;
+            --text: #e8e4dc;
+            --muted: #6b6b6b;
+            --accent: #c9a96e;
+            --accent-glow: rgba(201, 169, 110, 0.2);
+            --error: #e74c3c;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: "DM Mono", monospace;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            overflow-x: hidden;
+        }
+
+        /* Background Noise */
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: -1;
+            opacity: 0.4;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 700px;
+            animation: fadeIn 0.8s ease-out;
+            text-align: center;
+        }
+
+        header {
+            margin-bottom: 50px;
+        }
+
+        .logo-subtitle {
+            font-size: 11px;
+            letter-spacing: 0.4em;
+            color: var(--accent);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        h1 {
+            font-family: "Cormorant Garamond", serif;
+            font-size: clamp(40px, 10vw, 64px);
+            font-weight: 300;
+            letter-spacing: -0.01em;
+            line-height: 1;
+        }
+
+        h1 em {
+            font-style: italic;
+            color: var(--accent);
+        }
+
+        .button-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        a.category-btn {
+            display: block;
+            text-decoration: none;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 20px;
+            font-size: 16px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-radius: 4px;
+        }
+
+        a.category-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: rgba(201, 169, 110, 0.05);
+            transform: translateY(-2px);
+        }
+
+        .category-desc {
+            display: block;
+            font-size: 11px;
+            color: var(--muted);
+            margin-top: 5px;
+            text-transform: none;
+            letter-spacing: 0;
+        }
+
+        .top-right-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            text-decoration: none;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 12px 20px;
+            font-size: 14px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-radius: 4px;
+        }
+        
+        .top-right-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: rgba(201, 169, 110, 0.05);
+            transform: translateY(-2px);
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(14, 14, 14, 0.9);
+            backdrop-filter: blur(5px);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 30px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+            position: relative;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            color: var(--muted);
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close-modal:hover {
+            color: var(--text);
+        }
+
+        .video-container {
+            width: 100%;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 20px;
+            background: #000;
+        }
+
+        #videoFeed {
+            width: 100%;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+<a href="/chatbot" class="top-right-btn">✨ What Do I Wear?</a>
+
+<div class="container">
+    <header>
+        <div class="logo-subtitle">Neural Fashion Engine</div>
+        <h1>Style<em>Sense</em></h1>
+        <p style="margin-top: 20px; color: var(--muted); font-size: 14px;">Select a category to evaluate your outfit against.</p>
+    </header>
+
+    <div class="button-container">
+        <a id="openCameraBtn" class="category-btn" style="border-color: var(--accent); color: var(--accent);">
+            📸 Live Camera Analysis
+            <span class="category-desc" style="color: var(--accent)">Capture & analyze your outfit in real-time</span>
+        </a>
+        <a href="/upload/Traditional" class="category-btn">
+            Traditional
+            <span class="category-desc">Evaluate for Ethnic wear, Sarees, Kurtas</span>
+        </a>
+        <a href="/upload/Casual" class="category-btn">
+            Casual
+            <span class="category-desc">Evaluate for Everyday wear, T-shirts, Jeans</span>
+        </a>
+        <a href="/upload/Formals" class="category-btn">
+            Formals
+            <span class="category-desc">Evaluate for Suits, Blazers, Elegant dresses</span>
+        </a>
+    </div>
+</div>
+
+<!-- Camera Modal -->
+<div id="cameraModal" class="modal">
+    <div class="modal-content">
+        <span class="close-modal">&times;</span>
+        <h2 style="font-family: 'Cormorant Garamond', serif; font-size: 32px; font-weight: 300;">Live Camera</h2>
+        <div class="video-container">
+            <video id="videoFeed" autoplay playsinline></video>
+            <canvas id="captureCanvas" style="display:none;"></canvas>
+            <img id="capturedImage" style="display:none; width: 100%; border-radius: 4px;" />
+        </div>
+        <div id="loading" style="display:none; margin: 20px 0; color: var(--accent);">
+            Analyzing outfit...
+        </div>
+        <div id="resultsContainer" style="display:none; margin-top: 20px; text-align: left; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 4px; border: 1px solid var(--border);">
+            <h3 id="resClass" style="color: var(--accent); margin-bottom: 5px; font-family: 'Cormorant Garamond', serif; font-size: 24px;"></h3>
+            <p id="resConfidence" style="font-size: 12px; margin-bottom: 15px; color: var(--muted);"></p>
+            <p id="resFeedback" style="font-size: 14px; font-style: italic; line-height: 1.5;"></p>
+        </div>
+        <div class="modal-actions" style="margin-top: 20px; display: flex; gap: 10px; justify-content: center;">
+            <button id="captureBtn" class="top-right-btn" style="position: static; flex: 1; pointer-events: none; opacity: 0.7;">Loading AI Model...</button>
+            <button id="retakeBtn" class="top-right-btn" style="position: static; flex: 1; display: none;">Retake</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Global mouse tracking for background glow
+    document.addEventListener('mousemove', (e) => {
+        document.body.style.setProperty('--mouse-x', `${e.clientX}px`);
+        document.body.style.setProperty('--mouse-y', `${e.clientY}px`);
+    });
+
+    // 3D Tilt Effect for buttons
+    document.querySelectorAll('.category-btn, .top-right-btn').forEach(btn => {
+        btn.addEventListener('mousemove', e => {
+            const rect = btn.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2;
+            
+            const rotateX = ((y - centerY) / centerY) * -8;
+            const rotateY = ((x - centerX) / centerX) * 8;
+            
+            btn.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
+            btn.style.boxShadow = `${-rotateY}px ${rotateX}px 20px rgba(201, 169, 110, 0.15)`;
+            btn.style.borderColor = 'var(--accent)';
+        });
+        
+        btn.addEventListener('mouseleave', () => {
+            btn.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)';
+            btn.style.boxShadow = 'none';
+            btn.style.borderColor = 'var(--border)';
+            btn.style.transition = 'all 0.4s ease';
+        });
+        
+        btn.addEventListener('mouseenter', () => {
+            btn.style.transition = 'none';
+        });
+    });
+
+    // Camera Modal Logic
+    const openCameraBtn = document.getElementById('openCameraBtn');
+    const cameraModal = document.getElementById('cameraModal');
+    const closeModal = document.querySelector('.close-modal');
+    const videoFeed = document.getElementById('videoFeed');
+    const captureCanvas = document.getElementById('captureCanvas');
+    const capturedImage = document.getElementById('capturedImage');
+    const captureBtn = document.getElementById('captureBtn');
+    const retakeBtn = document.getElementById('retakeBtn');
+    const loading = document.getElementById('loading');
+    const resultsContainer = document.getElementById('resultsContainer');
+    let stream = null;
+    let cocoModel = null;
+    let detectionLoopId = null;
+
+    async function startCamera() {
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            videoFeed.srcObject = stream;
+            cameraModal.style.display = 'flex';
+            resetModalState();
+            
+            if (!cocoModel) {
+                captureBtn.innerText = "Loading AI Model...";
+                cocoModel = await cocoSsd.load();
+            }
+            captureBtn.innerText = "Scanning for Person...";
+            detectFrame();
+            
+        } catch (err) {
+            alert("Camera access denied or unavailable.");
+            console.error(err);
+        }
+    }
+
+    async function detectFrame() {
+        if (videoFeed.style.display === 'none' || !cocoModel) return;
+        
+        try {
+            const predictions = await cocoModel.detect(videoFeed);
+            const person = predictions.find(p => p.class === 'person' && p.score > 0.6);
+            
+            if (person) {
+                captureBtn.innerText = "Person Detected! Capturing...";
+                setTimeout(() => captureBtn.click(), 500); // Small delay before capture
+            } else {
+                detectionLoopId = requestAnimationFrame(detectFrame);
+            }
+        } catch (e) {
+            detectionLoopId = requestAnimationFrame(detectFrame);
+        }
+    }
+
+    function stopCamera() {
+        if (detectionLoopId) cancelAnimationFrame(detectionLoopId);
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+            stream = null;
+        }
+        cameraModal.style.display = 'none';
+    }
+
+    function resetModalState() {
+        videoFeed.style.display = 'block';
+        capturedImage.style.display = 'none';
+        resultsContainer.style.display = 'none';
+        loading.style.display = 'none';
+        captureBtn.style.display = 'block';
+        if (cocoModel) {
+            captureBtn.innerText = "Scanning for Person...";
+            detectFrame();
+        } else {
+            captureBtn.innerText = "Loading AI Model...";
+        }
+        retakeBtn.style.display = 'none';
+    }
+
+    openCameraBtn.addEventListener('click', startCamera);
+    closeModal.addEventListener('click', stopCamera);
+    
+    // Close modal if clicked outside
+    window.addEventListener('click', (e) => {
+        if (e.target === cameraModal) stopCamera();
+    });
+
+    captureBtn.addEventListener('click', async () => {
+        if (detectionLoopId) cancelAnimationFrame(detectionLoopId);
+        
+        // Capture frame
+        captureCanvas.width = videoFeed.videoWidth;
+        captureCanvas.height = videoFeed.videoHeight;
+        captureCanvas.getContext('2d').drawImage(videoFeed, 0, 0);
+        
+        const imageDataUrl = captureCanvas.toDataURL('image/jpeg', 0.8);
+        capturedImage.src = imageDataUrl;
+        
+        // Update UI
+        videoFeed.style.display = 'none';
+        capturedImage.style.display = 'block';
+        captureBtn.style.display = 'none';
+        retakeBtn.style.display = 'block';
+        loading.style.display = 'block';
+        resultsContainer.style.display = 'none';
+
+        // Convert to Blob and send
+        captureCanvas.toBlob(async (blob) => {
+            const formData = new FormData();
+            formData.append('image', blob, 'capture.jpg');
+
+            try {
+                const res = await fetch('/predict', { method: 'POST', body: formData });
+                const data = await res.json();
+                
+                loading.style.display = 'none';
+                if(data.success) {
+                    resultsContainer.style.display = 'block';
+                    document.getElementById('resClass').innerHTML = `${data.emoji} ${data.predicted_class}`;
+                    document.getElementById('resClass').style.color = data.color;
+                    document.getElementById('resConfidence').innerText = `Confidence: ${data.confidence}%`;
+                    document.getElementById('resFeedback').innerText = data.ai_feedback;
+                } else {
+                    alert("Analysis failed: " + data.error);
+                }
+            } catch (err) {
+                loading.style.display = 'none';
+                alert("Network error.");
+                console.error(err);
+            }
+        }, 'image/jpeg', 0.8);
+    });
+
+    retakeBtn.addEventListener('click', resetModalState);
+
+</script>
+</body>
+</html>

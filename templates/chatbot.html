@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StyleSense — Fashion Stylist Chatbot</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0e0e0e;
+            --surface: #161616;
+            --border: #2a2a2a;
+            --text: #e8e4dc;
+            --muted: #6b6b6b;
+            --accent: #c9a96e;
+            --accent-glow: rgba(201, 169, 110, 0.2);
+            --user-msg: rgba(201, 169, 110, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: var(--bg);
+            background-image: radial-gradient(circle 800px at var(--mouse-x, 50vw) var(--mouse-y, 50vh), rgba(201, 169, 110, 0.07), transparent 80%);
+            color: var(--text);
+            font-family: "DM Mono", monospace;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+        }
+
+        /* Background Noise */
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: -1;
+            opacity: 0.4;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            height: 80vh;
+        }
+
+        .nav-back {
+            display: inline-flex;
+            align-items: center;
+            color: var(--muted);
+            text-decoration: none;
+            font-size: 12px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+            transition: color 0.3s ease;
+        }
+
+        .nav-back:hover {
+            color: var(--accent);
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-family: "Cormorant Garamond", serif;
+            font-size: 32px;
+            font-weight: 300;
+        }
+
+        h1 em {
+            font-style: italic;
+            color: var(--accent);
+        }
+
+        .chat-box {
+            flex: 1;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            line-height: 1.5;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .message.bot {
+            align-self: flex-start;
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+
+        .message.user {
+            align-self: flex-end;
+            background: var(--user-msg);
+            border: 1px solid var(--accent);
+            color: var(--accent);
+        }
+
+        .input-area {
+            display: flex;
+            padding: 15px;
+            background: var(--bg);
+            border-top: 1px solid var(--border);
+        }
+
+        input[type="text"] {
+            flex: 1;
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 12px;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 14px;
+            outline: none;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--accent);
+        }
+
+        button {
+            background: var(--accent);
+            color: var(--bg);
+            border: none;
+            padding: 0 20px;
+            margin-left: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            background: #d4b98a;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .typing-indicator {
+            display: none;
+            align-self: flex-start;
+            padding: 12px 16px;
+            color: var(--muted);
+            font-size: 12px;
+            font-style: italic;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="/" class="nav-back">← Back to Home</a>
+    <header>
+        <h1>AI <em>Stylist</em> Chat</h1>
+        <p style="font-size: 12px; color: var(--muted); margin-top: 5px;">Ask me what to wear for any occasion!</p>
+    </header>
+
+    <div class="chat-box">
+        <div class="messages" id="messages">
+            <div class="message bot">
+                Hey there! Got an event coming up? Tell me where you're headed and I'll style you up! ✨
+            </div>
+            <div class="typing-indicator" id="typing-indicator">Stylist is typing...</div>
+        </div>
+        <div class="input-area">
+            <input type="text" id="user-input" placeholder="E.g., What should I wear for a baby shower?" onkeypress="handleKeyPress(event)">
+            <button id="send-btn" onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const messagesDiv = document.getElementById('messages');
+    const userInput = document.getElementById('user-input');
+    const sendBtn = document.getElementById('send-btn');
+    const typingIndicator = document.getElementById('typing-indicator');
+
+    function handleKeyPress(e) {
+        if (e.key === 'Enter') {
+            sendMessage();
+        }
+    }
+
+    async function sendMessage() {
+        const text = userInput.value.trim();
+        if (!text) return;
+
+        // Add user message
+        addMessage(text, 'user');
+        userInput.value = '';
+        userInput.disabled = true;
+        sendBtn.disabled = true;
+        
+        // Show typing indicator
+        typingIndicator.style.display = 'block';
+        messagesDiv.appendChild(typingIndicator); // move to bottom
+        scrollToBottom();
+
+        try {
+            const response = await fetch('/chat_api', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ message: text })
+            });
+
+            const data = await response.json();
+            
+            typingIndicator.style.display = 'none';
+
+            if (data.error) {
+                addMessage("Sorry, " + data.error, 'bot');
+            } else if (data.type === 'suggestions') {
+                addSuggestionCards(data.data);
+            } else {
+                addMessage(data.reply, 'bot');
+            }
+        } catch (err) {
+            typingIndicator.style.display = 'none';
+            addMessage("Network error. Please try again.", 'bot');
+        }
+
+        userInput.disabled = false;
+        sendBtn.disabled = false;
+        userInput.focus();
+    }
+
+    function addSuggestionCards(suggestions) {
+        const container = document.createElement('div');
+        container.className = `message bot`;
+        container.style.maxWidth = '100%';
+        container.style.background = 'transparent';
+        container.style.border = 'none';
+        container.style.padding = '0';
+        
+        let header = document.createElement('div');
+        header.innerText = "Here are 3 complete looks for you: ✨";
+        header.style.marginBottom = '10px';
+        container.appendChild(header);
+
+        suggestions.forEach((s, index) => {
+            const card = document.createElement('div');
+            card.className = 'suggestion-card';
+            
+            card.innerHTML = `
+                <div class="suggestion-content">
+                    <h4 style="color: var(--accent); margin-bottom: 10px; font-family: 'Cormorant Garamond', serif; font-size: 18px;">Option ${index + 1}</h4>
+                    <p><strong>👗 Outfit:</strong> ${s.outfit}</p>
+                    <p><strong>👠 Footwear:</strong> ${s.footwear}</p>
+                    <p><strong>💄 Grooming:</strong> ${s.grooming}</p>
+                    <p><strong>💎 Accessories:</strong> ${s.accessories}</p>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+
+        messagesDiv.appendChild(container);
+        if (typingIndicator.style.display === 'block') {
+            messagesDiv.appendChild(typingIndicator);
+        }
+        
+        // Apply tilt effect to new cards
+        applyTiltEffect('.suggestion-card');
+        
+        scrollToBottom();
+    }
+
+    function addMessage(text, sender) {
+        const div = document.createElement('div');
+        div.className = `message ${sender}`;
+        
+        // Simple formatting for bold and line breaks
+        let formattedText = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        formattedText = formattedText.replace(/\n/g, '<br>');
+        
+        div.innerHTML = formattedText;
+        messagesDiv.appendChild(div);
+        
+        // Ensure typing indicator stays at the bottom if visible
+        if (typingIndicator.style.display === 'block') {
+            messagesDiv.appendChild(typingIndicator);
+        }
+        
+        scrollToBottom();
+    }
+
+    function scrollToBottom() {
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+    // Global mouse tracking for background glow
+    document.addEventListener('mousemove', (e) => {
+        document.body.style.setProperty('--mouse-x', `${e.clientX}px`);
+        document.body.style.setProperty('--mouse-y', `${e.clientY}px`);
+    });
+
+    // Function to apply 3D tilt to cards
+    function applyTiltEffect(selector) {
+        document.querySelectorAll(selector).forEach(el => {
+            if (el.dataset.tiltApplied) return;
+            el.dataset.tiltApplied = "true";
+            
+            el.addEventListener('mousemove', e => {
+                const rect = el.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                
+                const rotateX = ((y - centerY) / centerY) * -5;
+                const rotateY = ((x - centerX) / centerX) * 5;
+                
+                el.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
+                el.style.boxShadow = `${-rotateY}px ${rotateX}px 15px rgba(201, 169, 110, 0.15)`;
+                el.style.borderColor = 'var(--accent)';
+            });
+            
+            el.addEventListener('mouseleave', () => {
+                el.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)';
+                el.style.boxShadow = 'none';
+                el.style.borderColor = 'var(--border)';
+                el.style.transition = 'all 0.4s ease';
+            });
+            
+            el.addEventListener('mouseenter', () => {
+                el.style.transition = 'none';
+            });
+        });
+    }
+
+    applyTiltEffect('.chat-box');
+</script>
+
+</body>
+</html>

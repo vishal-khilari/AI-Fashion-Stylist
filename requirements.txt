@@ -1,0 +1,7 @@
+flask
+pillow
+google-generativeai
+torch
+torchvision
+# Optional: use if you want to download image datasets via Bing
+icrawler
