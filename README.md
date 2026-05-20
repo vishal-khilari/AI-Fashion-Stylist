@@ -4,13 +4,15 @@ An AI-powered fashion web app that combines a custom-trained PyTorch image class
 
 ## Key Features
 
-- **Image classification** of clothing photos into `Formal`, `Casual`, or `Traditional`.
-- **Confidence scoring** with per-class probability breakdown.
-- **Personalized GenAI feedback** when `Gemini` API access is configured.
-- **Fashion stylist chatbot** that returns structured outfit recommendations in JSON.
-- **Web UI** with upload and chatbot pages.
-- **CLI utilities** for training, evaluation, and single-image prediction.
-- **Two-stage training pipeline** using EfficientNet-B0 with transfer learning.
+- **AI Image Classification:** Accurately classifies clothing photos into `Formal`, `Casual`, or `Traditional` styles.
+- **Confidence Scoring & Analytics:** Provides per-class probability breakdowns and confidence scores for predictions.
+- **Personalized GenAI Stylist:** Integrates Google Gemini (2.5 Flash) to generate creative, energetic fashion compliments and styling tips based on the predicted outfit.
+- **Interactive Fashion Chatbot:** Features a dedicated AI chatbot that provides structured, full-outfit recommendations (clothing, footwear, grooming, and accessories).
+- **Modern, Responsive Web UI:** A polished frontend with dynamic class-specific metadata (custom emojis, color themes, and descriptions) and intuitive upload interfaces.
+- **Serverless-Optimized Inference:** Dual-engine architecture automatically utilizes **ONNX Runtime** for ultra-fast, lightweight inference in serverless environments (like Vercel), while supporting PyTorch fallback for local development.
+- **Robust Error Handling:** Seamlessly manages invalid image formats and gracefully handles missing API keys without breaking the application flow.
+- **Vercel Deployment Ready:** Pre-configured with an optimized `requirements.txt` and `vercel.json` for immediate deployment to Vercel without exceeding serverless size limits.
+- **Comprehensive CLI Tools:** Includes command-line utilities for two-stage model training (EfficientNet-B0 transfer learning), model evaluation, and single-image inference.
 
 ## Prerequisites
 
