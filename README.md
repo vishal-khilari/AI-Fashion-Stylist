@@ -33,9 +33,15 @@ source venv/bin/activate
 
 3. Install the required packages:
 
-```bash
-pip install torch torchvision flask pillow google-generativeai
-```
+- For local development and model training (includes PyTorch & torchvision):
+  ```bash
+  pip install -r requirements-dev.txt
+  ```
+
+- For lightweight web app running only (using ONNX Runtime):
+  ```bash
+  pip install -r requirements.txt
+  ```
 
 4. (Optional) Install additional packages for dataset image downloads:
 
@@ -145,24 +151,29 @@ dataset/
 ## GitHub and Vercel Deployment
 
 ### GitHub
+
 - Initialize the repository locally with `git init`.
 - Add all project files and commit.
 - Set a remote such as `origin` and push to GitHub.
-- `api_key.txt`, `dataset/`, and model weight files (`*.pth`, `*.pt`) are excluded by `.gitignore` to keep the repo clean and avoid leaking secrets.
+- `api_key.txt`, `dataset/`, and PyTorch checkpoint files (`*.pth`, `*.pt`) are excluded by `.gitignore` to keep the repo clean and avoid leaking secrets.
+- **Note**: The self-contained ONNX model `dress_classifier.onnx` is tracked and pushed to GitHub so Vercel can access it directly.
 
 ### Vercel
-- The repo includes `vercel.json` and `requirements.txt` for Python deployment.
-- Set the `GEMINI_API_KEY` secret in the Vercel dashboard so GenAI features work.
-- Note: deploying a full PyTorch model on Vercel may be challenging due to package size and runtime limits. For a reliable live demo, consider using a backend host such as Render, Railway, or a dedicated VM if the model fails to load on Vercel.
 
-### Quick start
+- The Flask app in `app.py` has a dual-engine system. It will automatically load the model using `onnxruntime` if available (recommended for Vercel/CPU serverless functions), and fall back to PyTorch only if ONNX is not present.
+- The `requirements.txt` has been optimized specifically for Vercel Serverless Functions by removing `torch` and `torchvision` (which exceed size limits) and using `onnxruntime` + `numpy` instead.
+- Set the `GEMINI_API_KEY` environment variable in your Vercel project dashboard to enable AI stylist chatbot features.
+
+### Quick Start
+
 ```bash
 git init
 git add .
-git commit -m "Initial commit"
+git commit -m "Initialize repo with ONNX support for Vercel deployment"
 ```
 
 Then add your GitHub remote and push:
+
 ```bash
 git remote add origin https://github.com/<your-user>/<your-repo>.git
 git branch -M main

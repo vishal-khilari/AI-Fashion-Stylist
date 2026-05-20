@@ -9,40 +9,86 @@ Features:
 
 import io
 import os
-import torch
 import logging
+import numpy as np
 from flask import Flask, request, jsonify, render_template
 from PIL import Image, UnidentifiedImageError
-
-# Project-specific imports
-from initialisation import CLASS_NAMES, DEVICE
-from Transforms import inference_transform
-from SaveAndReload import load_model
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+# Try importing ONNX Runtime
+try:
+    import onnxruntime as ort
+    HAS_ORT = True
+except ImportError:
+    HAS_ORT = False
+
+# Try importing PyTorch for local fallback
+try:
+    import torch
+    from initialisation import CLASS_NAMES, DEVICE
+    from Transforms import inference_transform
+    from SaveAndReload import load_model
+    HAS_TORCH = True
+except ImportError:
+    HAS_TORCH = False
+    CLASS_NAMES = ['Formal', 'Casual', 'Traditional']
+    DEVICE = 'cpu'
+    inference_transform = None
+    load_model = None
+
 app = Flask(__name__)
 
 # Model configuration
-MODEL_PATH = 'dress_classifier.pth'
+MODEL_PTH_PATH = 'dress_classifier.pth'
+MODEL_ONNX_PATH = 'dress_classifier.onnx'
+
 model = None
+ort_session = None
 
 def get_model():
-    """Lazy load the model to ensure it's ready when needed."""
-    global model
-    if model is None:
-        if not os.path.exists(MODEL_PATH):
-            logger.error(f"Model file not found at {MODEL_PATH}")
-            raise FileNotFoundError(f"Model file {MODEL_PATH} not found.")
+    """Lazy load the model (ONNX or PyTorch) to ensure it's ready when needed."""
+    global model, ort_session
+    
+    # 1. Try ONNX model first (recommended for Vercel/CPU serverless environments)
+    if HAS_ORT and os.path.exists(MODEL_ONNX_PATH):
+        if ort_session is None:
+            logger.info("Loading dress classifier model using ONNX Runtime...")
+            ort_session = ort.InferenceSession(MODEL_ONNX_PATH)
+            logger.info("ONNX model loaded successfully!")
+        return ort_session
         
-        logger.info("Loading dress classifier model...")
-        model = load_model(MODEL_PATH)
-        model.to(DEVICE)
-        model.eval()
-        logger.info(f"Model loaded successfully on {DEVICE}!")
-    return model
+    # 2. Fall back to PyTorch if available
+    if HAS_TORCH:
+        if model is None:
+            if not os.path.exists(MODEL_PTH_PATH):
+                logger.error(f"Model file not found at {MODEL_PTH_PATH}")
+                raise FileNotFoundError(f"Model file {MODEL_PTH_PATH} not found.")
+            
+            logger.info("Loading dress classifier model using PyTorch...")
+            model = load_model(MODEL_PTH_PATH)
+            model.to(DEVICE)
+            model.eval()
+            logger.info(f"Model loaded successfully on {DEVICE}!")
+        return model
+        
+    raise RuntimeError("Neither ONNX Runtime + ONNX model nor PyTorch + PyTorch model could be loaded.")
+
+def preprocess_image_numpy(img):
+    """Helper to preprocess images for ONNX Runtime using NumPy & PIL (no torchvision dependency)."""
+    img_resized = img.resize((224, 224), Image.Resampling.BILINEAR)
+    img_data = np.array(img_resized).astype(np.float32) / 255.0
+    if img_data.ndim == 2:
+        img_data = np.stack([img_data] * 3, axis=-1)
+    elif img_data.shape[2] == 4:
+        img_data = img_data[:, :, :3]
+    img_data = img_data.transpose(2, 0, 1)
+    mean = np.array([0.485, 0.456, 0.406]).reshape(3, 1, 1)
+    std = np.array([0.229, 0.224, 0.225]).reshape(3, 1, 1)
+    img_data = (img_data - mean) / std
+    return np.expand_dims(img_data, axis=0).astype(np.float32)
 
 # Class-specific metadata for UI enhancement
 CLASS_META = {
@@ -98,17 +144,31 @@ def predict():
         except UnidentifiedImageError:
             return jsonify({'error': 'Invalid image format. Please upload a JPG, PNG, or WEBP.'}), 400
 
-        # 2. Preprocess for the model
-        tensor = inference_transform(img).unsqueeze(0).to(DEVICE)
-
-        # 3. Inference
+        # 2. Get the model/session
         current_model = get_model()
-        with torch.no_grad():
-            logits = current_model(tensor)
-            probs = torch.softmax(logits, dim=1)[0]
+
+        # 3. Inference & Preprocessing
+        if ort_session is not None:
+            # ONNX Runtime inference (pure NumPy preprocessing)
+            numpy_tensor = preprocess_image_numpy(img)
+            input_name = ort_session.get_inputs()[0].name
+            logits = ort_session.run(None, {input_name: numpy_tensor})[0]
+            # Softmax
+            e_x = np.exp(logits - np.max(logits, axis=1, keepdims=True))
+            probs_arr = (e_x / e_x.sum(axis=1, keepdims=True))[0]
+            top_idx = int(np.argmax(probs_arr))
+            top_prob = float(probs_arr[top_idx])
+        else:
+            # PyTorch inference
+            tensor = inference_transform(img).unsqueeze(0).to(DEVICE)
+            with torch.no_grad():
+                logits = current_model(tensor)
+                probs = torch.softmax(logits, dim=1)[0]
+            probs_arr = probs.cpu().numpy()
+            top_idx = probs.argmax().item()
+            top_prob = probs[top_idx].item()
 
         # 4. Process results
-        top_idx = probs.argmax().item()
         top_class = CLASS_NAMES[top_idx]
         
         all_scores = []
@@ -116,7 +176,7 @@ def predict():
             meta = CLASS_META.get(class_name, DEFAULT_META)
             all_scores.append({
                 'class': class_name,
-                'score': float(probs[i].item() * 100),
+                'score': float(probs_arr[i] * 100),
                 'emoji': meta['emoji'],
                 'desc': meta['desc'],
                 'color': meta['color']
@@ -127,7 +187,7 @@ def predict():
 
         top_meta = CLASS_META.get(top_class, DEFAULT_META)
         
-        logger.info(f"Prediction: {top_class} ({probs[top_idx].item():.2f})")
+        logger.info(f"Prediction: {top_class} ({top_prob:.2f})")
 
         # --- GenAI Integration ---
         ai_feedback = None
@@ -141,7 +201,7 @@ def predict():
                 import google.generativeai as genai
                 genai.configure(api_key=gemini_api_key)
                 gen_model = genai.GenerativeModel('gemini-2.5-flash')
-                prompt = f"Act as an expert fashion stylist. The user has uploaded an outfit that our AI classified as {top_class} with {round(probs[top_idx].item() * 100, 1)}% confidence. Give a short, energetic 2-sentence fashion compliment or styling tip. Be creative and hype them up!"
+                prompt = f"Act as an expert fashion stylist. The user has uploaded an outfit that our AI classified as {top_class} with {round(top_prob * 100, 1)}% confidence. Give a short, energetic 2-sentence fashion compliment or styling tip. Be creative and hype them up!"
                 gen_response = gen_model.generate_content(prompt)
                 ai_feedback = gen_response.text
             except Exception as e:

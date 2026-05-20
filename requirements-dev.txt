@@ -1,0 +1,8 @@
+flask
+pillow
+google-generativeai
+torch
+torchvision
+icrawler
+numpy
+onnxruntime
