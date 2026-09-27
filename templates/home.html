@@ -3,20 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StyleSense — Fashion Classifier</title>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+    <title>StyleSense — AI Fashion Stylist & Dress Classifier</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
     <style>
         :root {
             --bg: #0e0e0e;
             --surface: #161616;
+            --surface-elevated: #1e1e1e;
             --border: #2a2a2a;
+            --border-light: #3a3a3a;
             --text: #e8e4dc;
-            --muted: #6b6b6b;
+            --muted: #8c887b;
             --accent: #c9a96e;
             --accent-glow: rgba(201, 169, 110, 0.2);
+            --accent-soft: rgba(201, 169, 110, 0.08);
+            --success: #5cb85c;
+            --warning: #f39c12;
             --error: #e74c3c;
+            --droidcam: #2ecc71;
         }
 
         * {
@@ -51,13 +57,13 @@
 
         .container {
             width: 100%;
-            max-width: 700px;
+            max-width: 760px;
             animation: fadeIn 0.8s ease-out;
             text-align: center;
         }
 
         header {
-            margin-bottom: 50px;
+            margin-bottom: 45px;
         }
 
         .logo-subtitle {
@@ -70,7 +76,7 @@
 
         h1 {
             font-family: "Cormorant Garamond", serif;
-            font-size: clamp(40px, 10vw, 64px);
+            font-size: clamp(40px, 10vw, 68px);
             font-weight: 300;
             letter-spacing: -0.01em;
             line-height: 1;
@@ -84,8 +90,8 @@
         .button-container {
             display: flex;
             flex-direction: column;
-            gap: 20px;
-            max-width: 400px;
+            gap: 16px;
+            max-width: 440px;
             margin: 0 auto;
         }
 
@@ -95,29 +101,38 @@
             background: var(--surface);
             border: 1px solid var(--border);
             color: var(--text);
-            padding: 20px;
-            font-size: 16px;
-            letter-spacing: 0.1em;
+            padding: 18px 20px;
+            font-size: 15px;
+            letter-spacing: 0.08em;
             text-transform: uppercase;
             cursor: pointer;
             transition: all 0.3s ease;
             border-radius: 4px;
+            text-align: left;
         }
 
         a.category-btn:hover {
             border-color: var(--accent);
             color: var(--accent);
-            background: rgba(201, 169, 110, 0.05);
+            background: var(--accent-soft);
             transform: translateY(-2px);
+        }
+
+        .category-title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-weight: 500;
         }
 
         .category-desc {
             display: block;
             font-size: 11px;
             color: var(--muted);
-            margin-top: 5px;
+            margin-top: 6px;
             text-transform: none;
             letter-spacing: 0;
+            font-weight: 300;
         }
 
         .top-right-btn {
@@ -129,7 +144,7 @@
             border: 1px solid var(--border);
             color: var(--text);
             padding: 12px 20px;
-            font-size: 14px;
+            font-size: 13px;
             letter-spacing: 0.1em;
             text-transform: uppercase;
             cursor: pointer;
@@ -140,7 +155,7 @@
         .top-right-btn:hover {
             border-color: var(--accent);
             color: var(--accent);
-            background: rgba(201, 169, 110, 0.05);
+            background: var(--accent-soft);
             transform: translateY(-2px);
         }
 
@@ -155,22 +170,26 @@
             top: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(14, 14, 14, 0.9);
-            backdrop-filter: blur(5px);
+            background-color: rgba(10, 10, 10, 0.92);
+            backdrop-filter: blur(8px);
             align-items: center;
             justify-content: center;
+            padding: 20px;
         }
 
         .modal-content {
             background: var(--surface);
-            border: 1px solid var(--border);
-            padding: 30px;
+            border: 1px solid var(--border-light);
+            padding: 28px;
             border-radius: 8px;
-            width: 90%;
-            max-width: 500px;
+            width: 100%;
+            max-width: 640px;
+            max-height: 92vh;
+            overflow-y: auto;
             text-align: center;
             position: relative;
             animation: fadeIn 0.3s ease-out;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
         }
 
         .close-modal {
@@ -181,251 +200,1217 @@
             font-size: 28px;
             font-weight: bold;
             cursor: pointer;
+            transition: color 0.2s;
         }
 
         .close-modal:hover {
             color: var(--text);
         }
 
+        /* Camera Controls & Selector */
+        .camera-controls {
+            margin: 18px 0 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            text-align: left;
+            background: rgba(0, 0, 0, 0.35);
+            padding: 14px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+        }
+
+        .camera-selector-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .camera-label-tag {
+            font-size: 11px;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 500;
+        }
+
+        select {
+            flex: 1;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 9px 12px;
+            font-family: inherit;
+            font-size: 12px;
+            border-radius: 4px;
+            outline: none;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+
+        select:focus {
+            border-color: var(--accent);
+        }
+
+        .btn-icon {
+            padding: 9px 14px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            font-size: 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-icon:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        /* Status Badge */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--muted);
+        }
+
+        .status-dot.connected { background: var(--success); box-shadow: 0 0 8px var(--success); }
+        .status-dot.droidcam { background: var(--droidcam); box-shadow: 0 0 8px var(--droidcam); }
+        .status-dot.reconnecting { background: var(--warning); animation: pulse 1s infinite; }
+        .status-dot.disconnected { background: var(--error); }
+
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+        .camera-info-banner {
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 11px;
+            line-height: 1.4;
+            display: none;
+        }
+
+        .camera-info-banner.droidcam-active {
+            display: block;
+            background: rgba(46, 204, 113, 0.1);
+            border: 1px solid rgba(46, 204, 113, 0.4);
+            color: #2ecc71;
+        }
+
+        .camera-info-banner.droidcam-hint {
+            display: block;
+            background: rgba(201, 169, 110, 0.08);
+            border: 1px solid rgba(201, 169, 110, 0.3);
+            color: #d4b98a;
+        }
+
+        .camera-info-banner.error {
+            display: block;
+            background: rgba(231, 76, 60, 0.1);
+            border: 1px solid rgba(231, 76, 60, 0.4);
+            color: #e74c3c;
+        }
+
+        /* Live Hardware Diagnostics HUD */
+        .camera-debug-hud {
+            margin-top: 10px;
+            background: rgba(14, 14, 14, 0.95);
+            border: 1px solid var(--border-light);
+            border-radius: 6px;
+            padding: 10px 12px;
+            font-size: 11px;
+            font-family: "DM Mono", monospace;
+            text-align: left;
+            line-height: 1.5;
+        }
+
+        .debug-hud-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .debug-hud-title {
+            color: var(--accent);
+            font-size: 10px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+
+        .debug-badge {
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+        }
+
+        .debug-badge-match {
+            background: rgba(46, 204, 113, 0.15);
+            border: 1px solid #2ecc71;
+            color: #2ecc71;
+        }
+
+        .debug-badge-mismatch {
+            background: rgba(231, 76, 60, 0.15);
+            border: 1px solid #e74c3c;
+            color: #e74c3c;
+        }
+
+        .debug-badge-error {
+            background: rgba(231, 76, 60, 0.2);
+            border: 1px solid #e74c3c;
+            color: #ff6b6b;
+        }
+
+        .debug-badge-pending {
+            background: rgba(243, 156, 18, 0.15);
+            border: 1px solid #f39c12;
+            color: #f39c12;
+        }
+
+        .debug-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .debug-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .debug-key {
+            color: var(--muted);
+            font-size: 10.5px;
+            min-width: 145px;
+            flex-shrink: 0;
+        }
+
+        .debug-val {
+            color: var(--text);
+            font-size: 11px;
+            word-break: break-all;
+            text-align: right;
+        }
+
+        .debug-val.font-mono {
+            font-size: 10px;
+            opacity: 0.9;
+        }
+
         .video-container {
             width: 100%;
-            border-radius: 4px;
+            border-radius: 6px;
             overflow: hidden;
-            margin-top: 20px;
             background: #000;
+            position: relative;
+            min-height: 280px;
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         #videoFeed {
             width: 100%;
+            height: auto;
+            max-height: 380px;
+            object-fit: contain;
             display: block;
+            background: #000;
+        }
+
+        #capturedImage {
+            width: 100%;
+            height: auto;
+            max-height: 380px;
+            object-fit: contain;
+            border-radius: 4px;
+            display: none;
+        }
+
+        .action-bar {
+            margin-top: 18px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .primary-action-btn {
+            flex: 1;
+            background: var(--accent);
+            color: var(--bg);
+            border: 1px solid var(--accent);
+            padding: 14px 20px;
+            font-family: inherit;
+            font-size: 13px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            font-weight: 500;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .primary-action-btn:hover {
+            background: #d4b98a;
+            transform: translateY(-1px);
+        }
+
+        .secondary-action-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 14px 20px;
+            font-family: inherit;
+            font-size: 13px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .secondary-action-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        /* Results Card */
+        #resultsContainer {
+            display: none;
+            margin-top: 20px;
+            text-align: left;
+            background: rgba(0, 0, 0, 0.35);
+            padding: 20px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .result-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 12px;
+        }
+
+        .score-bars {
+            margin: 15px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .score-row {
+            display: flex;
+            align-items: center;
+            font-size: 11px;
+            gap: 10px;
+        }
+
+        .score-row-label { width: 85px; color: var(--muted); }
+        .score-row-bg { flex: 1; height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+        .score-row-fill { height: 100%; width: 0%; transition: width 0.8s ease; }
+        .score-row-val { width: 38px; text-align: right; color: var(--accent); }
+
+        .ai-feedback-box {
+            background: var(--accent-soft);
+            border-left: 3px solid var(--accent);
+            padding: 12px 16px;
+            border-radius: 0 4px 4px 0;
+            font-size: 13px;
+            line-height: 1.5;
+            color: #f3efe6;
+            margin-top: 15px;
         }
     </style>
 </head>
 <body>
 
-<a href="/chatbot" class="top-right-btn">✨ What Do I Wear?</a>
+<a href="/chatbot" class="top-right-btn">✨ AI Stylist Chat</a>
 
 <div class="container">
     <header>
-        <div class="logo-subtitle">Neural Fashion Engine</div>
+        <div class="logo-subtitle">Neural Fashion Vision Engine</div>
         <h1>Style<em>Sense</em></h1>
-        <p style="margin-top: 20px; color: var(--muted); font-size: 14px;">Select a category to evaluate your outfit against.</p>
+        <p style="margin-top: 15px; color: var(--muted); font-size: 13px;">Real-time clothing classification & personalized styling recommendations.</p>
     </header>
 
     <div class="button-container">
-        <a id="openCameraBtn" class="category-btn" style="border-color: var(--accent); color: var(--accent);">
-            📸 Live Camera Analysis
-            <span class="category-desc" style="color: var(--accent)">Capture & analyze your outfit in real-time</span>
+        <a id="openCameraBtn" class="category-btn" style="border-color: var(--accent); background: var(--accent-soft);">
+            <div class="category-title" style="color: var(--accent)">
+                <span>📱 Real-Time Camera Analysis</span>
+                <span>✦</span>
+            </div>
+            <span class="category-desc" style="color: var(--accent); opacity: 0.9;">
+                Live camera feed via DroidCam Virtual Camera (Wi-Fi / USB) or Integrated Webcam
+            </span>
         </a>
-        <a href="/upload/Traditional" class="category-btn">
-            Traditional
-            <span class="category-desc">Evaluate for Ethnic wear, Sarees, Kurtas</span>
+        <a href="/upload/Formal" class="category-btn">
+            <div class="category-title">
+                <span>Formal Attire</span>
+                <span>👔</span>
+            </div>
+            <span class="category-desc">Suits, blazers, dress shirts, and elegant office wear</span>
         </a>
         <a href="/upload/Casual" class="category-btn">
-            Casual
-            <span class="category-desc">Evaluate for Everyday wear, T-shirts, Jeans</span>
+            <div class="category-title">
+                <span>Casual Wear</span>
+                <span>👕</span>
+            </div>
+            <span class="category-desc">Everyday streetwear, t-shirts, denim, and hoodies</span>
         </a>
-        <a href="/upload/Formals" class="category-btn">
-            Formals
-            <span class="category-desc">Evaluate for Suits, Blazers, Elegant dresses</span>
+        <a href="/upload/Traditional" class="category-btn">
+            <div class="category-title">
+                <span>Traditional Wear</span>
+                <span>🥻</span>
+            </div>
+            <span class="category-desc">Ethnic heritage outfits: Sarees, Kurtas, Sherwanis</span>
         </a>
     </div>
 </div>
 
-<!-- Camera Modal -->
+<!-- Live Camera Analysis Modal -->
 <div id="cameraModal" class="modal">
     <div class="modal-content">
-        <span class="close-modal">&times;</span>
-        <h2 style="font-family: 'Cormorant Garamond', serif; font-size: 32px; font-weight: 300;">Live Camera</h2>
+        <span class="close-modal" id="closeModalBtn">&times;</span>
+        <h2 style="font-family: 'Cormorant Garamond', serif; font-size: 32px; font-weight: 300; margin-bottom: 4px;">Live Camera Analysis</h2>
+        <p style="font-size: 11px; color: var(--muted); letter-spacing: 0.05em; text-transform: uppercase;">Real-Time Fashion Style Detection</p>
+
+        <!-- Camera Controls & Source Selector -->
+        <div class="camera-controls">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <span class="camera-label-tag">Camera Source</span>
+                <div class="status-badge" id="cameraStatusBadge">
+                    <span class="status-dot" id="statusDot"></span>
+                    <span id="statusText">Detecting cameras...</span>
+                </div>
+            </div>
+
+            <div class="camera-selector-row">
+                <select id="cameraSelect" title="Select Video Input Camera">
+                    <option value="">Scanning for cameras...</option>
+                </select>
+                <button type="button" class="btn-icon" id="refreshCamerasBtn" title="Rescan video input devices">🔄 Rescan</button>
+            </div>
+
+            <!-- Contextual Camera Info / Hint Banner -->
+            <div id="cameraInfoBanner" class="camera-info-banner"></div>
+
+            <!-- Live Hardware Debug & Device Verification HUD -->
+            <div id="cameraDebugHud" class="camera-debug-hud">
+                <div class="debug-hud-header">
+                    <span class="debug-hud-title">🔍 Hardware & Stream Diagnostics (Live Debug)</span>
+                    <span id="debugMatchBadge" class="debug-badge debug-badge-pending">INITIALIZING</span>
+                </div>
+                <div class="debug-grid">
+                    <div class="debug-row">
+                        <span class="debug-key">Dropdown Selected:</span>
+                        <span id="dbgRequestedLabel" class="debug-val">—</span>
+                    </div>
+                    <div class="debug-row">
+                        <span class="debug-key">Requested DeviceID:</span>
+                        <span id="dbgRequestedId" class="debug-val font-mono" title="">—</span>
+                    </div>
+                    <div class="debug-row">
+                        <span class="debug-key">Active Track Label:</span>
+                        <span id="dbgActiveTrackLabel" class="debug-val">—</span>
+                    </div>
+                    <div class="debug-row">
+                        <span class="debug-key">Active Track DeviceID:</span>
+                        <span id="dbgActiveTrackId" class="debug-val font-mono" title="">—</span>
+                    </div>
+                    <div class="debug-row">
+                        <span class="debug-key">DeviceID Match:</span>
+                        <span id="dbgMatchStatus" class="debug-val">—</span>
+                    </div>
+                    <div class="debug-row">
+                        <span class="debug-key">Stream Specs:</span>
+                        <span id="dbgResolution" class="debug-val">—</span>
+                    </div>
+                    <div class="debug-row">
+                        <span class="debug-key">getUserMedia Status:</span>
+                        <span id="dbgStatus" class="debug-val">—</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Video Stream Box -->
         <div class="video-container">
-            <video id="videoFeed" autoplay playsinline></video>
+            <video id="videoFeed" autoplay playsinline muted></video>
             <canvas id="captureCanvas" style="display:none;"></canvas>
-            <img id="capturedImage" style="display:none; width: 100%; border-radius: 4px;" />
+            <img id="capturedImage" alt="Captured Frame" />
         </div>
-        <div id="loading" style="display:none; margin: 20px 0; color: var(--accent);">
-            Analyzing outfit...
+
+        <div id="loadingIndicator" style="display:none; margin: 16px 0; color: var(--accent); font-size: 13px;">
+            ✦ Analyzing outfit with AI neural network...
         </div>
-        <div id="resultsContainer" style="display:none; margin-top: 20px; text-align: left; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 4px; border: 1px solid var(--border);">
-            <h3 id="resClass" style="color: var(--accent); margin-bottom: 5px; font-family: 'Cormorant Garamond', serif; font-size: 24px;"></h3>
-            <p id="resConfidence" style="font-size: 12px; margin-bottom: 15px; color: var(--muted);"></p>
-            <p id="resFeedback" style="font-size: 14px; font-style: italic; line-height: 1.5;"></p>
+
+        <!-- Results Display Box -->
+        <div id="resultsContainer">
+            <div class="result-header">
+                <div>
+                    <h3 id="resClass" style="font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 400;"></h3>
+                    <p id="resDesc" style="font-size: 11px; color: var(--muted); margin-top: 2px;"></p>
+                </div>
+                <div style="text-align: right;">
+                    <span id="resConfidence" style="display: inline-block; font-size: 11px; background: var(--accent-glow); color: var(--accent); padding: 4px 10px; border-radius: 12px;"></span>
+                </div>
+            </div>
+
+            <div class="score-bars" id="scoreBars"></div>
+
+            <div id="resFeedbackBox" class="ai-feedback-box" style="display: none;">
+                <strong>Stylist Advice:</strong> <span id="resFeedback"></span>
+            </div>
         </div>
-        <div class="modal-actions" style="margin-top: 20px; display: flex; gap: 10px; justify-content: center;">
-            <button id="captureBtn" class="top-right-btn" style="position: static; flex: 1; pointer-events: none; opacity: 0.7;">Loading AI Model...</button>
-            <button id="retakeBtn" class="top-right-btn" style="position: static; flex: 1; display: none;">Retake</button>
+
+        <!-- Action Buttons -->
+        <div class="action-bar">
+            <button id="captureBtn" class="primary-action-btn">📸 Capture & Classify</button>
+            <button id="autoScanBtn" class="secondary-action-btn">🤖 Auto Person Scan</button>
+            <button id="retakeBtn" class="secondary-action-btn" style="display: none;">🔄 Live Feed</button>
         </div>
     </div>
 </div>
 
 <script>
-    // Global mouse tracking for background glow
+    // Global Camera State
+    let activeStream = null;
+    let availableVideoDevices = [];
+    let currentSelectedDeviceId = null;
+    let cocoModel = null;
+    let autoScanActive = false;
+    let autoScanLoopId = null;
+
+    // DOM Elements
+    const openCameraBtn = document.getElementById('openCameraBtn');
+    const cameraModal = document.getElementById('cameraModal');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+    const cameraSelect = document.getElementById('cameraSelect');
+    const refreshCamerasBtn = document.getElementById('refreshCamerasBtn');
+    const cameraStatusBadge = document.getElementById('cameraStatusBadge');
+    const statusDot = document.getElementById('statusDot');
+    const statusText = document.getElementById('statusText');
+    const cameraInfoBanner = document.getElementById('cameraInfoBanner');
+    const videoFeed = document.getElementById('videoFeed');
+    const captureCanvas = document.getElementById('captureCanvas');
+    const capturedImage = document.getElementById('capturedImage');
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    const resultsContainer = document.getElementById('resultsContainer');
+    const captureBtn = document.getElementById('captureBtn');
+    const autoScanBtn = document.getElementById('autoScanBtn');
+    const retakeBtn = document.getElementById('retakeBtn');
+
+    // Debug HUD DOM Elements
+    const dbgRequestedLabel = document.getElementById('dbgRequestedLabel');
+    const dbgRequestedId = document.getElementById('dbgRequestedId');
+    const dbgActiveTrackLabel = document.getElementById('dbgActiveTrackLabel');
+    const dbgActiveTrackId = document.getElementById('dbgActiveTrackId');
+    const dbgMatchStatus = document.getElementById('dbgMatchStatus');
+    const dbgResolution = document.getElementById('dbgResolution');
+    const dbgStatus = document.getElementById('dbgStatus');
+    const debugMatchBadge = document.getElementById('debugMatchBadge');
+
+    // -------------------------------------------------------------
+    // Helper: Identify DroidCam Device Names
+    // -------------------------------------------------------------
+    function isDroidCamLabel(label) {
+        if (!label || typeof label !== 'string') return false;
+        const lower = label.toLowerCase();
+        return lower.includes('droidcam') || lower.includes('droid cam') || lower.includes('droid');
+    }
+
+    function updateStatusUI(state, text) {
+        statusDot.className = `status-dot ${state}`;
+        statusText.innerText = text;
+    }
+
+    function updateInfoBanner(type, customText = '') {
+        cameraInfoBanner.className = 'camera-info-banner';
+        if (type === 'droidcam') {
+            cameraInfoBanner.classList.add('droidcam-active');
+            cameraInfoBanner.innerHTML = '✨ <strong>DroidCam Virtual Camera active:</strong> Live video streaming from your phone (Wi-Fi or USB).';
+        } else if (type === 'hint') {
+            cameraInfoBanner.classList.add('droidcam-hint');
+            cameraInfoBanner.innerHTML = '💡 <strong>DroidCam not found:</strong> Using standard webcam. To use your phone camera, start DroidCam on your phone and PC (Wi-Fi or USB), then click <strong>🔄 Rescan</strong>.';
+        } else if (type === 'error') {
+            cameraInfoBanner.classList.add('error');
+            cameraInfoBanner.innerHTML = `⚠️ ${customText || 'Camera error encountered.'}`;
+        } else {
+            cameraInfoBanner.style.display = 'none';
+        }
+    }
+
+    function updateDebugHud({
+        requestedLabel = '—',
+        requestedId = '—',
+        activeTrackLabel = '—',
+        activeTrackId = '—',
+        matchState = 'pending', // 'match', 'mismatch', 'error', 'pending'
+        matchText = '—',
+        resolution = '—',
+        status = '—'
+    }) {
+        if (dbgRequestedLabel) dbgRequestedLabel.textContent = requestedLabel || '—';
+        if (dbgRequestedId) {
+            dbgRequestedId.textContent = requestedId ? (requestedId.length > 28 ? requestedId.slice(0, 14) + '...' + requestedId.slice(-8) : requestedId) : '—';
+            dbgRequestedId.title = requestedId || '';
+        }
+        if (dbgActiveTrackLabel) dbgActiveTrackLabel.textContent = activeTrackLabel || '—';
+        if (dbgActiveTrackId) {
+            dbgActiveTrackId.textContent = activeTrackId ? (activeTrackId.length > 28 ? activeTrackId.slice(0, 14) + '...' + activeTrackId.slice(-8) : activeTrackId) : '—';
+            dbgActiveTrackId.title = activeTrackId || '';
+        }
+        if (dbgMatchStatus) {
+            dbgMatchStatus.innerHTML = matchText;
+        }
+        if (dbgResolution) dbgResolution.textContent = resolution;
+        if (dbgStatus) dbgStatus.textContent = status;
+
+        if (debugMatchBadge) {
+            debugMatchBadge.className = `debug-badge debug-badge-${matchState}`;
+            if (matchState === 'match') {
+                debugMatchBadge.textContent = 'MATCH ✅';
+            } else if (matchState === 'mismatch') {
+                debugMatchBadge.textContent = 'MISMATCH ❌';
+            } else if (matchState === 'error') {
+                debugMatchBadge.textContent = 'STREAM ERROR ⚠️';
+            } else {
+                debugMatchBadge.textContent = 'CONNECTING...';
+            }
+        }
+    }
+
+    // -------------------------------------------------------------
+    // 1. Initial Permission Request & Device Enumeration
+    // -------------------------------------------------------------
+    async function initCameraSystem() {
+        console.log("[StyleSense Camera] Initializing camera system...");
+        updateStatusUI('reconnecting', 'Checking camera permissions...');
+        updateDebugHud({
+            requestedLabel: 'Detecting...',
+            requestedId: '—',
+            activeTrackLabel: '—',
+            activeTrackId: '—',
+            matchState: 'pending',
+            matchText: 'Checking devices...',
+            resolution: '—',
+            status: 'Requesting permission...'
+        });
+
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            console.error("[StyleSense Camera] navigator.mediaDevices.getUserMedia is NOT supported in this browser.");
+            updateStatusUI('disconnected', 'MediaDevices API unsupported');
+            updateInfoBanner('error', 'Your browser does not support the WebRTC MediaDevices API. Please use Google Chrome, Microsoft Edge, or Firefox.');
+            updateDebugHud({
+                requestedLabel: 'N/A',
+                requestedId: 'N/A',
+                activeTrackLabel: 'N/A',
+                activeTrackId: 'N/A',
+                matchState: 'error',
+                matchText: '<span style="color:#e74c3c;">API Unsupported</span>',
+                resolution: 'N/A',
+                status: 'navigator.mediaDevices.getUserMedia is undefined'
+            });
+            return;
+        }
+
+        // Step 1: Request permission with a quick temporary stream if labels are empty.
+        // Before permission is granted, enumerateDevices() returns empty label strings for privacy.
+        try {
+            console.log("[StyleSense Camera] Requesting initial permission to reveal device labels...");
+            const tempStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+            console.log("[StyleSense Camera] Initial permission granted! Stopping temporary stream...");
+            tempStream.getTracks().forEach(track => {
+                track.stop();
+                console.log(`[StyleSense Camera] Closed temp track: ${track.label}`);
+            });
+        } catch (permErr) {
+            console.warn("[StyleSense Camera] Initial permission prompt dismissed or denied:", permErr);
+        }
+
+        // Step 2: Enumerate all available cameras and start the best one
+        await enumerateAndSelectCamera();
+    }
+
+    // -------------------------------------------------------------
+    // 2. Dynamic Camera Enumeration & Priority Selection
+    // -------------------------------------------------------------
+    async function enumerateAndSelectCamera(preferredDeviceId = null) {
+        try {
+            console.log("[StyleSense Camera] Enumerating available video input devices...");
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            availableVideoDevices = devices.filter(d => d.kind === 'videoinput');
+
+            console.log("[StyleSense Camera] All video input devices found on system:", availableVideoDevices.map(d => ({
+                label: d.label || '(Unnamed camera)',
+                deviceId: d.deviceId,
+                groupId: d.groupId
+            })));
+
+            cameraSelect.innerHTML = '';
+
+            if (availableVideoDevices.length === 0) {
+                console.warn("[StyleSense Camera] No video input devices found on this system.");
+                cameraSelect.innerHTML = '<option value="">No cameras found</option>';
+                updateStatusUI('disconnected', 'No camera detected');
+                updateInfoBanner('error', 'No video camera detected on your system. Connect a webcam or start DroidCam and click Rescan.');
+                updateDebugHud({
+                    requestedLabel: 'None',
+                    requestedId: 'None',
+                    activeTrackLabel: 'None',
+                    activeTrackId: 'None',
+                    matchState: 'error',
+                    matchText: '<span style="color:#e74c3c;">No devices</span>',
+                    resolution: 'N/A',
+                    status: '0 videoinput devices found'
+                });
+                return;
+            }
+
+            let droidCamDevice = null;
+            let defaultDevice = availableVideoDevices[0];
+
+            availableVideoDevices.forEach((device, index) => {
+                const opt = document.createElement('option');
+                opt.value = device.deviceId;
+                const label = device.label || `Camera ${index + 1}`;
+                const isDroid = isDroidCamLabel(label);
+
+                if (isDroid) {
+                    opt.textContent = `📱 ${label} [DroidCam]`;
+                    if (!droidCamDevice) {
+                        droidCamDevice = device;
+                    }
+                } else {
+                    opt.textContent = `💻 ${label}`;
+                }
+
+                cameraSelect.appendChild(opt);
+            });
+
+            console.log("[StyleSense Camera] DroidCam device found in list:", Boolean(droidCamDevice), droidCamDevice ? `("${droidCamDevice.label}" | ID: ${droidCamDevice.deviceId})` : '');
+
+            // Choose device:
+            // 1. Explicit preferredDeviceId (if user manually switched)
+            // 2. DroidCam Virtual Camera (automatic preference!)
+            // 3. First available device
+            let targetDeviceId = preferredDeviceId;
+            if (!targetDeviceId || !availableVideoDevices.some(d => d.deviceId === targetDeviceId)) {
+                targetDeviceId = droidCamDevice ? droidCamDevice.deviceId : defaultDevice.deviceId;
+            }
+
+            cameraSelect.value = targetDeviceId;
+            currentSelectedDeviceId = targetDeviceId;
+
+            const selectedDevice = availableVideoDevices.find(d => d.deviceId === targetDeviceId) || defaultDevice;
+            const selectedLabel = selectedDevice.label || 'Camera';
+
+            console.log(`[StyleSense Camera] Selected target camera: "${selectedLabel}" (ID: ${targetDeviceId})`);
+
+            // Start stream
+            await startCameraStream(targetDeviceId, selectedLabel);
+
+        } catch (err) {
+            console.error("[StyleSense Camera] Error during device enumeration:", err);
+            updateStatusUI('disconnected', 'Enumeration error');
+            updateInfoBanner('error', 'Failed to scan camera devices: ' + err.message);
+            updateDebugHud({
+                requestedLabel: 'Error',
+                requestedId: 'Error',
+                activeTrackLabel: 'None',
+                activeTrackId: 'None',
+                matchState: 'error',
+                matchText: '<span style="color:#e74c3c;">Enumeration Failed</span>',
+                resolution: 'N/A',
+                status: err.message
+            });
+        }
+    }
+
+    // -------------------------------------------------------------
+    // 3. Request Stream with getUserMedia() & Strict Device Verification
+    // -------------------------------------------------------------
+    async function startCameraStream(deviceId, label) {
+        // Step 1: Cleanly stop any existing MediaStream tracks
+        stopCurrentStream();
+
+        const isDroid = isDroidCamLabel(label);
+        updateStatusUI('reconnecting', `Connecting to ${label || 'camera'}...`);
+
+        updateDebugHud({
+            requestedLabel: label,
+            requestedId: deviceId,
+            activeTrackLabel: 'Connecting...',
+            activeTrackId: '—',
+            matchState: 'pending',
+            matchText: 'Connecting...',
+            resolution: '—',
+            status: 'Requesting getUserMedia stream...'
+        });
+
+        console.log(`\n[StyleSense Camera] ========================================`);
+        console.log(`[StyleSense Camera] START CAMERA STREAM REQUEST`);
+        console.log(`[StyleSense Camera] Target Camera: "${label}" (ID: ${deviceId})`);
+        console.log(`[StyleSense Camera] Is DroidCam target? ${isDroid}`);
+
+        // Primary constraints: exact deviceId with ideal HD resolution
+        // Note: Using { exact: deviceId } guarantees the browser will NOT substitute another camera.
+        const hdExactConstraints = {
+            video: deviceId ? {
+                deviceId: { exact: deviceId },
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+            } : true,
+            audio: false
+        };
+
+        console.log("[StyleSense Camera] Exact constraints passed to getUserMedia():", JSON.stringify(hdExactConstraints, null, 2));
+
+        let stream = null;
+
+        try {
+            stream = await navigator.mediaDevices.getUserMedia(hdExactConstraints);
+            console.log("[StyleSense Camera] getUserMedia SUCCESS with HD exact constraints.");
+        } catch (err) {
+            console.warn("[StyleSense Camera] Primary HD exact constraints failed. Error details:", {
+                name: err.name,
+                message: err.message,
+                constraint: err.constraint,
+                stack: err.stack,
+                rawError: err
+            });
+
+            // If OverconstrainedError occurred (e.g. resolution 1280x720 not supported by DroidCam DirectShow filter),
+            // retry with ONLY exact deviceId (NO ideal width/height constraints).
+            // NOTE: We NEVER use { ideal: deviceId } because that allows the browser to silently fallback to the laptop HP camera.
+            if ((err.name === 'OverconstrainedError' || err.constraint === 'width' || err.constraint === 'height') && deviceId) {
+                const basicExactConstraints = {
+                    video: {
+                        deviceId: { exact: deviceId }
+                    },
+                    audio: false
+                };
+                console.log("[StyleSense Camera] Retrying with basic exact deviceId constraints (no resolution bounds):", JSON.stringify(basicExactConstraints, null, 2));
+                try {
+                    stream = await navigator.mediaDevices.getUserMedia(basicExactConstraints);
+                    console.log("[StyleSense Camera] Basic exact getUserMedia SUCCEEDED.");
+                } catch (retryErr) {
+                    handleStreamFailure(retryErr, deviceId, label);
+                    return;
+                }
+            } else {
+                handleStreamFailure(err, deviceId, label);
+                return;
+            }
+        }
+
+        if (!stream) {
+            handleStreamFailure(new Error("Null stream returned from getUserMedia"), deviceId, label);
+            return;
+        }
+
+        activeStream = stream;
+        const videoTracks = activeStream.getVideoTracks();
+        if (!videoTracks || videoTracks.length === 0) {
+            handleStreamFailure(new Error("Active stream contains no video tracks"), deviceId, label);
+            return;
+        }
+
+        const activeTrack = videoTracks[0];
+        const trackSettings = activeTrack.getSettings ? activeTrack.getSettings() : {};
+        const activeTrackDeviceId = trackSettings.deviceId || 'unknown';
+        const activeTrackLabel = activeTrack.label || 'Unknown Track';
+        const isActualDroidCam = isDroidCamLabel(activeTrackLabel);
+
+        // Verification: Compare requested deviceId with active track deviceId
+        const isIdMatch = !deviceId || (trackSettings.deviceId ? trackSettings.deviceId === deviceId : true);
+        const isLabelMatch = !label || activeTrackLabel.toLowerCase().includes(label.toLowerCase()) || label.toLowerCase().includes(activeTrackLabel.toLowerCase());
+        const isFullyVerified = isIdMatch && (isDroid ? isActualDroidCam : true);
+
+        console.log("[StyleSense Camera] ===== Live Stream Hardware Verification =====");
+        console.log("[StyleSense Camera] Requested Device ID     :", deviceId);
+        console.log("[StyleSense Camera] Active Track Device ID   :", activeTrackDeviceId);
+        console.log("[StyleSense Camera] Device ID Match?         :", isIdMatch ? "✅ YES (IDs match)" : "❌ NO (MISMATCH!)");
+        console.log("[StyleSense Camera] Requested Device Label   :", label);
+        console.log("[StyleSense Camera] Active Video Track Label :", activeTrackLabel);
+        console.log("[StyleSense Camera] Track Label Match?       :", isLabelMatch ? "✅ YES" : "⚠️ MISMATCH");
+        console.log("[StyleSense Camera] Active Track Settings    :", JSON.stringify(trackSettings, null, 2));
+        console.log(`[StyleSense Camera] ========================================\n`);
+
+        const resText = (trackSettings.width && trackSettings.height) 
+            ? `${trackSettings.width}x${trackSettings.height}${trackSettings.frameRate ? ` @ ${Math.round(trackSettings.frameRate)}fps` : ''}` 
+            : 'Active';
+
+        if (!isFullyVerified) {
+            console.error("[StyleSense Camera] CRITICAL: Active video track does not match requested camera!", {
+                requested: { label, deviceId },
+                actual: { label: activeTrackLabel, deviceId: activeTrackDeviceId }
+            });
+
+            updateDebugHud({
+                requestedLabel: label,
+                requestedId: deviceId,
+                activeTrackLabel: activeTrackLabel,
+                activeTrackId: activeTrackDeviceId,
+                matchState: 'mismatch',
+                matchText: `<span style="color:#e74c3c;">❌ MISMATCH (Active: ${activeTrackLabel})</span>`,
+                resolution: resText,
+                status: `Mismatch: Requested "${label}" but got "${activeTrackLabel}"`
+            });
+
+            updateInfoBanner('error', `⚠️ <strong>Camera Mismatch:</strong> Requested "${label}", but the browser activated "${activeTrackLabel}".`);
+            updateStatusUI('disconnected', `Mismatch: ${activeTrackLabel}`);
+        } else {
+            updateDebugHud({
+                requestedLabel: label,
+                requestedId: deviceId,
+                activeTrackLabel: activeTrackLabel,
+                activeTrackId: activeTrackDeviceId,
+                matchState: 'match',
+                matchText: `<span style="color:#2ecc71;">✅ Verified Match</span>`,
+                resolution: resText,
+                status: 'Streaming Live'
+            });
+
+            if (isActualDroidCam) {
+                updateStatusUI('droidcam', `📱 DroidCam Active (${resText})`);
+                updateInfoBanner('droidcam');
+            } else {
+                updateStatusUI('connected', `💻 ${activeTrackLabel} (${resText})`);
+                cameraInfoBanner.style.display = 'none';
+            }
+        }
+
+        // Attach stream to <video> element
+        videoFeed.srcObject = activeStream;
+        try {
+            await videoFeed.play();
+            console.log("[StyleSense Camera] Video feed playback started successfully.");
+        } catch (playErr) {
+            console.warn("[StyleSense Camera] videoFeed.play() warning:", playErr);
+        }
+    }
+
+    function handleStreamFailure(err, deviceId, label) {
+        console.error("[StyleSense Camera] getUserMedia FAILED for requested camera in full detail:", {
+            requestedLabel: label,
+            requestedDeviceId: deviceId,
+            errorName: err.name,
+            errorMessage: err.message,
+            errorConstraint: err.constraint,
+            errorStack: err.stack,
+            fullError: err
+        });
+
+        const isDroid = isDroidCamLabel(label);
+        let errorExplanation = "";
+
+        if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+            errorExplanation = isDroid
+                ? "DroidCam device is recognized by Windows but failed to stream frames. Please ensure that <strong>DroidCam Client is open on your PC</strong>, your phone is connected (via Wi-Fi or USB), and click <strong>'Start'</strong> in the DroidCam app."
+                : "Camera is busy or currently locked by another application (e.g. Zoom, Teams, Skype, or another browser tab).";
+        } else if (err.name === 'OverconstrainedError') {
+            errorExplanation = `The device cannot satisfy constraint: <code>${err.constraint || 'deviceId'}</code>.`;
+        } else if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+            errorExplanation = "Camera permission was denied in your browser. Please allow camera permissions in site settings.";
+        } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+            errorExplanation = "Camera hardware device was not found or has been disconnected.";
+        } else {
+            errorExplanation = err.message || "An unexpected error occurred while accessing the camera.";
+        }
+
+        updateStatusUI('disconnected', `Failed: ${err.name || 'Camera Error'}`);
+        updateInfoBanner('error', `<strong>Could not open "${label}" (${err.name || 'Error'}):</strong> ${errorExplanation}`);
+        
+        updateDebugHud({
+            requestedLabel: label,
+            requestedId: deviceId,
+            activeTrackLabel: 'None (Stream Failed)',
+            activeTrackId: 'None',
+            matchState: 'error',
+            matchText: `<span style="color:#ff6b6b;">❌ Stream Failed (${err.name || 'Error'})</span>`,
+            resolution: 'N/A',
+            status: `Error: ${err.name} - ${err.message || 'Stream Failed'}`
+        });
+
+        // Clean up video display
+        videoFeed.srcObject = null;
+    }
+
+    function stopCurrentStream() {
+        if (activeStream) {
+            console.log("[StyleSense Camera] Stopping active stream tracks...");
+            activeStream.getTracks().forEach(track => {
+                track.stop();
+                console.log(`[StyleSense Camera] Stopped track: ${track.label} (${track.kind})`);
+            });
+            activeStream = null;
+        }
+        videoFeed.srcObject = null;
+    }
+
+    // -------------------------------------------------------------
+    // 4. Modal Open, Close, and Lifecycle Handlers
+    // -------------------------------------------------------------
+    async function openModal() {
+        cameraModal.style.display = 'flex';
+        resetCaptureUI();
+        await initCameraSystem();
+    }
+
+    function closeModal() {
+        stopAutoScan();
+        stopCurrentStream();
+        cameraModal.style.display = 'none';
+        updateDebugHud({
+            requestedLabel: '—',
+            requestedId: '—',
+            activeTrackLabel: '—',
+            activeTrackId: '—',
+            matchState: 'pending',
+            matchText: 'Modal Closed',
+            resolution: '—',
+            status: 'Idle'
+        });
+        console.log("[StyleSense Camera] Camera modal closed and stream released.");
+    }
+
+    function resetCaptureUI() {
+        videoFeed.style.display = 'block';
+        capturedImage.style.display = 'none';
+        resultsContainer.style.display = 'none';
+        loadingIndicator.style.display = 'none';
+        captureBtn.style.display = 'block';
+        autoScanBtn.style.display = 'block';
+        retakeBtn.style.display = 'none';
+    }
+
+    // -------------------------------------------------------------
+    // 5. Capture & Send to AI Classifier (/predict)
+    // -------------------------------------------------------------
+    async function performCaptureAndPredict() {
+        stopAutoScan();
+        loadingIndicator.style.display = 'block';
+        resultsContainer.style.display = 'none';
+
+        // Draw current frame from video feed onto canvas
+        const vW = videoFeed.videoWidth || 640;
+        const vH = videoFeed.videoHeight || 480;
+        captureCanvas.width = vW;
+        captureCanvas.height = vH;
+        const ctx = captureCanvas.getContext('2d');
+        ctx.drawImage(videoFeed, 0, 0, vW, vH);
+
+        // Display captured snapshot preview in UI
+        const imageDataUrl = captureCanvas.toDataURL('image/jpeg', 0.9);
+        capturedImage.src = imageDataUrl;
+        videoFeed.style.display = 'none';
+        capturedImage.style.display = 'block';
+        captureBtn.style.display = 'none';
+        autoScanBtn.style.display = 'none';
+        retakeBtn.style.display = 'block';
+
+        console.log(`[StyleSense Camera] Captured frame (${vW}x${vH}). Sending to /predict endpoint...`);
+
+        // Convert canvas to JPEG blob and send to backend
+        captureCanvas.toBlob(async (blob) => {
+            if (!blob) {
+                loadingIndicator.style.display = 'none';
+                alert("Failed to capture image frame.");
+                resetCaptureUI();
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('image', blob, 'camera_capture.jpg');
+
+            try {
+                const res = await fetch('/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await res.json();
+                loadingIndicator.style.display = 'none';
+
+                if (data.success) {
+                    console.log("[StyleSense Camera] Prediction received successfully:", data);
+                    displayResults(data);
+                } else {
+                    console.error("[StyleSense Camera] Prediction error response:", data);
+                    alert("Analysis error: " + (data.error || "Could not classify frame"));
+                    resetCaptureUI();
+                }
+            } catch (err) {
+                loadingIndicator.style.display = 'none';
+                console.error("[StyleSense Camera] Network error during /predict fetch:", err);
+                alert("Network communication error.");
+                resetCaptureUI();
+            }
+        }, 'image/jpeg', 0.9);
+    }
+
+    function displayResults(data) {
+        resultsContainer.style.display = 'block';
+        document.getElementById('resClass').innerHTML = `${data.emoji} ${data.predicted_class}`;
+        document.getElementById('resClass').style.color = data.color;
+        document.getElementById('resDesc').innerText = data.desc;
+        document.getElementById('resConfidence').innerText = `${data.confidence}% Match`;
+
+        // Render confidence breakdown bars
+        const barsContainer = document.getElementById('scoreBars');
+        barsContainer.innerHTML = '';
+        data.scores.forEach(s => {
+            const row = document.createElement('div');
+            row.className = 'score-row';
+            row.innerHTML = `
+                <div class="score-row-label">${s.emoji} ${s.class}</div>
+                <div class="score-row-bg">
+                    <div class="score-row-fill" style="width: 0%; background: ${s.color};"></div>
+                </div>
+                <div class="score-row-val">${Math.round(s.score)}%</div>
+            `;
+            barsContainer.appendChild(row);
+        });
+
+        // Animate score bars
+        setTimeout(() => {
+            const fills = document.querySelectorAll('.score-row-fill');
+            data.scores.forEach((s, idx) => {
+                if (fills[idx]) fills[idx].style.width = `${s.score}%`;
+            });
+        }, 100);
+
+        // Display Gemini AI Styling Feedback
+        if (data.ai_feedback) {
+            document.getElementById('resFeedback').innerText = data.ai_feedback;
+            document.getElementById('resFeedbackBox').style.display = 'block';
+        } else {
+            document.getElementById('resFeedbackBox').style.display = 'none';
+        }
+    }
+
+    // -------------------------------------------------------------
+    // 6. Auto Person Detection Scan (COCO-SSD)
+    // -------------------------------------------------------------
+    async function toggleAutoScan() {
+        if (autoScanActive) {
+            stopAutoScan();
+        } else {
+            autoScanActive = true;
+            autoScanBtn.innerText = "Scanning Person...";
+            autoScanBtn.style.borderColor = "var(--accent)";
+            autoScanBtn.style.color = "var(--accent)";
+
+            if (!cocoModel) {
+                loadingIndicator.innerText = "Loading person detection model...";
+                loadingIndicator.style.display = "block";
+                cocoModel = await cocoSsd.load();
+                loadingIndicator.style.display = "none";
+            }
+            runDetectionLoop();
+        }
+    }
+
+    function stopAutoScan() {
+        autoScanActive = false;
+        if (autoScanLoopId) cancelAnimationFrame(autoScanLoopId);
+        autoScanBtn.innerText = "🤖 Auto Person Scan";
+        autoScanBtn.style.borderColor = "var(--border)";
+        autoScanBtn.style.color = "var(--text)";
+    }
+
+    async function runDetectionLoop() {
+        if (!autoScanActive) return;
+
+        try {
+            if (cocoModel && videoFeed && videoFeed.readyState >= 2) {
+                const predictions = await cocoModel.detect(videoFeed);
+                const person = predictions.find(p => p.class === 'person' && p.score > 0.55);
+
+                if (person) {
+                    console.log("[StyleSense Camera] Person detected with confidence:", person.score);
+                    autoScanBtn.innerText = "Person Found! Capturing...";
+                    setTimeout(() => performCaptureAndPredict(), 400);
+                    return;
+                }
+            }
+        } catch (e) {
+            console.debug("[StyleSense Camera] Detection loop tick error:", e);
+        }
+
+        autoScanLoopId = requestAnimationFrame(runDetectionLoop);
+    }
+
+    // -------------------------------------------------------------
+    // 7. Event Listeners & Dynamic Device Change Detection
+    // -------------------------------------------------------------
+    openCameraBtn.addEventListener('click', openModal);
+    closeModalBtn.addEventListener('click', closeModal);
+    window.addEventListener('click', (e) => { if (e.target === cameraModal) closeModal(); });
+
+    // Camera Selector change
+    cameraSelect.addEventListener('change', async (e) => {
+        const selectedId = e.target.value;
+        if (selectedId) {
+            console.log(`[StyleSense Camera] User switched camera to deviceId: ${selectedId}`);
+            currentSelectedDeviceId = selectedId;
+            const device = availableVideoDevices.find(d => d.deviceId === selectedId);
+            const label = device ? device.label : 'Camera';
+            await startCameraStream(selectedId, label);
+        }
+    });
+
+    // Refresh button
+    refreshCamerasBtn.addEventListener('click', async () => {
+        console.log("[StyleSense Camera] Rescan requested by user.");
+        await enumerateAndSelectCamera(cameraSelect.value);
+    });
+
+    // Auto-detect when new camera devices are plugged in / unplugged
+    if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) {
+        navigator.mediaDevices.addEventListener('devicechange', async () => {
+            console.log("[StyleSense Camera] Media device hardware change detected! Updating camera list...");
+            if (cameraModal.style.display === 'flex') {
+                await enumerateAndSelectCamera(cameraSelect.value);
+            }
+        });
+    }
+
+    captureBtn.addEventListener('click', performCaptureAndPredict);
+    autoScanBtn.addEventListener('click', toggleAutoScan);
+    retakeBtn.addEventListener('click', resetCaptureUI);
+
+    // Global mouse tracking for interactive background glow
     document.addEventListener('mousemove', (e) => {
         document.body.style.setProperty('--mouse-x', `${e.clientX}px`);
         document.body.style.setProperty('--mouse-y', `${e.clientY}px`);
     });
-
-    // 3D Tilt Effect for buttons
-    document.querySelectorAll('.category-btn, .top-right-btn').forEach(btn => {
-        btn.addEventListener('mousemove', e => {
-            const rect = btn.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            const centerX = rect.width / 2;
-            const centerY = rect.height / 2;
-            
-            const rotateX = ((y - centerY) / centerY) * -8;
-            const rotateY = ((x - centerX) / centerX) * 8;
-            
-            btn.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
-            btn.style.boxShadow = `${-rotateY}px ${rotateX}px 20px rgba(201, 169, 110, 0.15)`;
-            btn.style.borderColor = 'var(--accent)';
-        });
-        
-        btn.addEventListener('mouseleave', () => {
-            btn.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)';
-            btn.style.boxShadow = 'none';
-            btn.style.borderColor = 'var(--border)';
-            btn.style.transition = 'all 0.4s ease';
-        });
-        
-        btn.addEventListener('mouseenter', () => {
-            btn.style.transition = 'none';
-        });
-    });
-
-    // Camera Modal Logic
-    const openCameraBtn = document.getElementById('openCameraBtn');
-    const cameraModal = document.getElementById('cameraModal');
-    const closeModal = document.querySelector('.close-modal');
-    const videoFeed = document.getElementById('videoFeed');
-    const captureCanvas = document.getElementById('captureCanvas');
-    const capturedImage = document.getElementById('capturedImage');
-    const captureBtn = document.getElementById('captureBtn');
-    const retakeBtn = document.getElementById('retakeBtn');
-    const loading = document.getElementById('loading');
-    const resultsContainer = document.getElementById('resultsContainer');
-    let stream = null;
-    let cocoModel = null;
-    let detectionLoopId = null;
-
-    async function startCamera() {
-        try {
-            stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            videoFeed.srcObject = stream;
-            cameraModal.style.display = 'flex';
-            resetModalState();
-            
-            if (!cocoModel) {
-                captureBtn.innerText = "Loading AI Model...";
-                cocoModel = await cocoSsd.load();
-            }
-            captureBtn.innerText = "Scanning for Person...";
-            detectFrame();
-            
-        } catch (err) {
-            alert("Camera access denied or unavailable.");
-            console.error(err);
-        }
-    }
-
-    async function detectFrame() {
-        if (videoFeed.style.display === 'none' || !cocoModel) return;
-        
-        try {
-            const predictions = await cocoModel.detect(videoFeed);
-            const person = predictions.find(p => p.class === 'person' && p.score > 0.6);
-            
-            if (person) {
-                captureBtn.innerText = "Person Detected! Capturing...";
-                setTimeout(() => captureBtn.click(), 500); // Small delay before capture
-            } else {
-                detectionLoopId = requestAnimationFrame(detectFrame);
-            }
-        } catch (e) {
-            detectionLoopId = requestAnimationFrame(detectFrame);
-        }
-    }
-
-    function stopCamera() {
-        if (detectionLoopId) cancelAnimationFrame(detectionLoopId);
-        if (stream) {
-            stream.getTracks().forEach(track => track.stop());
-            stream = null;
-        }
-        cameraModal.style.display = 'none';
-    }
-
-    function resetModalState() {
-        videoFeed.style.display = 'block';
-        capturedImage.style.display = 'none';
-        resultsContainer.style.display = 'none';
-        loading.style.display = 'none';
-        captureBtn.style.display = 'block';
-        if (cocoModel) {
-            captureBtn.innerText = "Scanning for Person...";
-            detectFrame();
-        } else {
-            captureBtn.innerText = "Loading AI Model...";
-        }
-        retakeBtn.style.display = 'none';
-    }
-
-    openCameraBtn.addEventListener('click', startCamera);
-    closeModal.addEventListener('click', stopCamera);
-    
-    // Close modal if clicked outside
-    window.addEventListener('click', (e) => {
-        if (e.target === cameraModal) stopCamera();
-    });
-
-    captureBtn.addEventListener('click', async () => {
-        if (detectionLoopId) cancelAnimationFrame(detectionLoopId);
-        
-        // Capture frame
-        captureCanvas.width = videoFeed.videoWidth;
-        captureCanvas.height = videoFeed.videoHeight;
-        captureCanvas.getContext('2d').drawImage(videoFeed, 0, 0);
-        
-        const imageDataUrl = captureCanvas.toDataURL('image/jpeg', 0.8);
-        capturedImage.src = imageDataUrl;
-        
-        // Update UI
-        videoFeed.style.display = 'none';
-        capturedImage.style.display = 'block';
-        captureBtn.style.display = 'none';
-        retakeBtn.style.display = 'block';
-        loading.style.display = 'block';
-        resultsContainer.style.display = 'none';
-
-        // Convert to Blob and send
-        captureCanvas.toBlob(async (blob) => {
-            const formData = new FormData();
-            formData.append('image', blob, 'capture.jpg');
-
-            try {
-                const res = await fetch('/predict', { method: 'POST', body: formData });
-                const data = await res.json();
-                
-                loading.style.display = 'none';
-                if(data.success) {
-                    resultsContainer.style.display = 'block';
-                    document.getElementById('resClass').innerHTML = `${data.emoji} ${data.predicted_class}`;
-                    document.getElementById('resClass').style.color = data.color;
-                    document.getElementById('resConfidence').innerText = `Confidence: ${data.confidence}%`;
-                    document.getElementById('resFeedback').innerText = data.ai_feedback;
-                } else {
-                    alert("Analysis failed: " + data.error);
-                }
-            } catch (err) {
-                loading.style.display = 'none';
-                alert("Network error.");
-                console.error(err);
-            }
-        }, 'image/jpeg', 0.8);
-    });
-
-    retakeBtn.addEventListener('click', resetModalState);
-
 </script>
 </body>
 </html>

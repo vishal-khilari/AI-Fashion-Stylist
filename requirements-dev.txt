@@ -6,3 +6,4 @@ torchvision
 icrawler
 numpy
 onnxruntime
+opencv-python

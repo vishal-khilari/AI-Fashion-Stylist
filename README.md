@@ -26,7 +26,74 @@ An AI-powered fashion web app that combines a custom-trained PyTorch image class
 2. Create and activate a virtual environment:
 
 ```bash
-python -m venv venv
+
+(venv) PS C:\Users\Vishal P Khilari\Desktop\github\Major projrct\Tmodel> pip install opencv-python
+Collecting opencv-python
+  Downloading opencv_python-5.0.0.93-cp37-abi3-win_amd64.whl.metadata (20 kB)
+Requirement already satisfied: numpy>=2 in c:\users\vishal p khilari\desktop\tmodel\venv\lib\site-packages (from opencv-python) (2.5.1)
+Downloading opencv_python-5.0.0.93-cp37-abi3-win_amd64.whl (44.0 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 44.0/44.0 MB 5.1 MB/s eta 0:00:00
+Installing collected packages: opencv-python
+Successfully installed opencv-python-5.0.0.93
+
+[notice] A new release of pip is available: 24.2 -> 26.2.1
+[notice] To update, run: C:\Users\Vishal P Khilari\Desktop\Tmodel\venv\Scripts\python.exe -m pip install --upgrade pip
+(venv) PS C:\Users\Vishal P Khilari\Desktop\github\Major projrct\Tmodel> pip install -r requirements.txt
+Requirement already satisfied: flask in c:\users\vishal p khilari\desktop\tmodel\venv\lib\site-packages (from -r requirements.txt (line 1)) (3.1.3)
+Requirement already satisfied: pillow in c:\users\vishal p khilari\desktop\tmodel\venv\lib\site-packages (from -r requirements.txt (line 2)) (12.3.0)
+Requirement already satisfied: google-generativeai in c:\users\vishal p khilari\desktop\tmodel\venv\lib\site-packages (from -r requirements.txt (line 3)) (0.8.6)
+Requirement already satisfied: numpy in c:\users\vishal p khilari\desktop\tmodel\venv\lib\site-packages (from -r requirements.txt (line 4)) (2.5.1)
+Requirement already satisfied: onnxruntime in c:\users\vishal p khilari\desktop\tmodel\venv\lib\site-packages (from -r requirements.txt (line 5)) (1.27.0)
+Requirement already satisfied: opencv-python in c:\users\vishal p khilari\desktop\tmodel\venv\lib\site-packages (from -r requirements.txt (line 6)) (5.0.0.93)
+Requirement already satisfied: blinker>=1.9.0 in c:\users\vishal p khilari\desktop\tmodel\venv\lib\site-packages (from flask->-r requirements.txt (line 1)) (1.9.0)
+Requirement already satisfied: click>=8.1.3 in c:\users\vishal p khilari\desktop\tmodel\venv\lib\site-packages (from flask->-r requirements.txt (line 1)) (8.4.2)
+Requirement already satisfied: itsdangerous>=2.2.0 in c:\users\vishal p khilari\desktop\tmodel\venv\lib\site-packages (from flask->-r requirements.txt (line1)) (2.2.0)
+Requirement already satisfied: jinja2>=3.1.2 in c:\users\vishal p khilari\desktop\tmodel\venv\lib\site-packages (from flask->-r requirements.txt (line 1)) (3.1.6)
+Requirement already satisfied: markupsafe>=2.1.1 in c:\users\vishal p khilari\desktop\tmodel\venv\lib\site-packages (from flask->-r requirements.txt (line 1)) (3.0.3)
+Requirement already satisfied: werkzeug>=3.1.0 in c:\users\vishal p khilari\desktop\tmodel\venv\lib\site-packages (from flask->-r requirements.txt (line 1))(3.1.8)
+Requirement already satisfied: google-ai-generativelanguage==0.6.15 in c:\users\vishal p khilari\desktop\tmodel\venv\lib\site-packages (from google-generativeai->-r requirements.txt (line 3)) (0.6.15)
+Requirement already satisfied: google-api-core in c:\users\vishal p khilari\desktop\tmodel\venv\lib\site-packages (from google-generativeai->-r requirements.txt (line 3)) (2.32.0)
+Requirement already satisfied: google-api-python-client in c:\users\vishal p khilari\desktop\tmodel\venv\lib\site-packages (from google-generativeai->-r requirements.txt (line 3)) (2.198.0)
+Requirement already satisfied: google-auth>=2.15.0 in c:\users\vishal p khilari\desktop\tmodel\venv\lib\site-packages (from google-generativeai->-r requirements.txt (line 3)) (2.56.0)
+Requirement already satisfied: protobuf in c:\users\vishal p khilari\desktop\tmodel\venv\lib\site-packages (from google-generativeai->-r requirements.txt (line 3)) (5.29.6)
+Requirement already satisfied: pydantic in c:\users\vishal p khilari\desktop\tmodel\venv\lib\site-packages (from google-generativeai->-r requirements.txt (line 3)) (2.13.4)
+Requirement already satisfied: tqdm in c:\users\vishal p khilari\desktop\tmodel\venv\lib\site-packages (from google-generativeai->-r requirements.txt (line 3)) (4.68.4)
+Requirement already satisfied: typing-extensions in c:\users\vishal p khilari\desktop\tmodel\venv\lib\site-packages (from google-generativeai->-r requirements.txt (line 3)) (4.16.0)
+Requirement already satisfied: proto-plus<2.0.0dev,>=1.22.3 in c:\users\vishal p khilari\desktop\tmodel\venv\lib\site-packages (from google-ai-generativelanguage==0.6.15->google-generativeai->-r requirements.txt (line 3)) (1.28.1)
+Requirement already satisfied: flatbuffers in c:\users\vishal p khilari\desktop\tmodel\venv\lib\site-packages (from onnxruntime->-r requirements.txt (line 5)) (25.12.19)
+Requirement already satisfied: packaging in c:\users\vishal p khilari\desktop\tmodel\venv\lib\site-packages (from onnxruntime->-r requirements.txt (line 5))(26.2)
+Requirement already satisfied: colorama in c:\users\vishal p khilari\desktop\tmodel\venv\lib\site-packages (from click>=8.1.3->flask->-r requirements.txt (line 1)) (0.4.6)
+Requirement already satisfied: googleapis-common-protos<2.0.0,>=1.63.2 in c:\users\vishal p khilari\desktop\tmodel\venv\lib\site-packages (from google-api-core->google-generativeai->-r requirements.txt (line 3)) (1.75.0)
+Requirement already satisfied: requests<3.0.0,>=2.33.0 in c:\users\vishal p khilari\desktop\tmodel\venv\lib\site-packages (from google-api-core->google-generativeai->-r requirements.txt (line 3)) (2.34.2)
+Requirement already satisfied: pyasn1-modules>=0.2.1 in c:\users\vishal p khilari\desktop\tmodel\venv\lib\site-packages (from google-auth>=2.15.0->google-generativeai->-r requirements.txt (line 3)) (0.4.2)
+Requirement already satisfied: cryptography>=38.0.3 in c:\users\vishal p khilari\desktop\tmodel\venv\lib\site-packages (from google-auth>=2.15.0->google-generativeai->-r requirements.txt (line 3)) (49.0.0)
+Requirement already satisfied: httplib2<1.0.0,>=0.19.0 in c:\users\vishal p khilari\desktop\tmodel\venv\lib\site-packages (from google-api-python-client->google-generativeai->-r requirements.txt (line 3)) (0.32.0)
+Requirement already satisfied: google-auth-httplib2<1.0.0,>=0.2.0 in c:\users\vishal p khilari\desktop\tmodel\venv\lib\site-packages (from google-api-python-client->google-generativeai->-r requirements.txt (line 3)) (0.4.0)
+Requirement already satisfied: uritemplate<5,>=3.0.1 in c:\users\vishal p khilari\desktop\tmodel\venv\lib\site-packages (from google-api-python-client->google-generativeai->-r requirements.txt (line 3)) (4.2.0)
+Requirement already satisfied: annotated-types>=0.6.0 in c:\users\vishal p khilari\desktop\tmodel\venv\lib\site-packages (from pydantic->google-generativeai->-r requirements.txt (line 3)) (0.7.0)
+Requirement already satisfied: pydantic-core==2.46.4 in c:\users\vishal p khilari\desktop\tmodel\venv\lib\site-packages (from pydantic->google-generativeai->-r requirements.txt (line 3)) (2.46.4)
+Requirement already satisfied: typing-inspection>=0.4.2 in c:\users\vishal p khilari\desktop\tmodel\venv\lib\site-packages (from pydantic->google-generativeai->-r requirements.txt (line 3)) (0.4.2)
+Requirement already satisfied: cffi>=2.0.0 in c:\users\vishal p khilari\desktop\tmodel\venv\lib\site-packages (from cryptography>=38.0.3->google-auth>=2.15.0->google-generativeai->-r requirements.txt (line 3)) (2.1.0)
+Requirement already satisfied: grpcio<2.0.0,>=1.41.0 in c:\users\vishal p khilari\desktop\tmodel\venv\lib\site-packages (from google-api-core[grpc]!=2.0.*,!=2.1.*,!=2.10.*,!=2.2.*,!=2.3.*,!=2.4.*,!=2.5.*,!=2.6.*,!=2.7.*,!=2.8.*,!=2.9.*,<3.0.0dev,>=1.34.1->google-ai-generativelanguage==0.6.15->google-generativeai->-r requirements.txt (line 3)) (1.82.1)
+Requirement already satisfied: grpcio-status<2.0.0,>=1.41.0 in c:\users\vishal p khilari\desktop\tmodel\venv\lib\site-packages (from google-api-core[grpc]!=2.0.*,!=2.1.*,!=2.10.*,!=2.2.*,!=2.3.*,!=2.4.*,!=2.5.*,!=2.6.*,!=2.7.*,!=2.8.*,!=2.9.*,<3.0.0dev,>=1.34.1->google-ai-generativelanguage==0.6.15->google-generativeai->-r requirements.txt (line 3)) (1.71.2)
+Requirement already satisfied: pyparsing<4,>=3.1 in c:\users\vishal p khilari\desktop\tmodel\venv\lib\site-packages (from httplib2<1.0.0,>=0.19.0->google-api-python-client->google-generativeai->-r requirements.txt (line 3)) (3.3.2)
+Requirement already satisfied: pyasn1<0.7.0,>=0.6.1 in c:\users\vishal p khilari\desktop\tmodel\venv\lib\site-packages (from pyasn1-modules>=0.2.1->google-auth>=2.15.0->google-generativeai->-r requirements.txt (line 3)) (0.6.4)
+Requirement already satisfied: charset_normalizer<4,>=2 in c:\users\vishal p khilari\desktop\tmodel\venv\lib\site-packages (from requests<3.0.0,>=2.33.0->google-api-core->google-generativeai->-r requirements.txt (line 3)) (3.4.9)
+Requirement already satisfied: idna<4,>=2.5 in c:\users\vishal p khilari\desktop\tmodel\venv\lib\site-packages (from requests<3.0.0,>=2.33.0->google-api-core->google-generativeai->-r requirements.txt (line 3)) (3.18)
+Requirement already satisfied: urllib3<3,>=1.26 in c:\users\vishal p khilari\desktop\tmodel\venv\lib\site-packages (from requests<3.0.0,>=2.33.0->google-api-core->google-generativeai->-r requirements.txt (line 3)) (2.7.0)
+Requirement already satisfied: certifi>=2023.5.7 in c:\users\vishal p khilari\desktop\tmodel\venv\lib\site-packages (from requests<3.0.0,>=2.33.0->google-api-core->google-generativeai->-r requirements.txt (line 3)) (2026.6.17)
+Requirement already satisfied: pycparser in c:\users\vishal p khilari\desktop\tmodel\venv\lib\site-packages (from cffi>=2.0.0->cryptography>=38.0.3->google-auth>=2.15.0->google-generativeai->-r requirements.txt (line 3)) (3.0)
+
+[notice] A new release of pip is available: 24.2 -> 26.2.1
+[notice] To update, run: C:\Users\Vishal P Khilari\Desktop\Tmodel\venv\Scripts\python.exe -m pip install --upgrade pip
+(venv) PS C:\Users\Vishal P Khilari\Desktop\github\Major projrct\Tmodel> python app.py
+Traceback (most recent call last):
+  File "C:\Users\Vishal P Khilari\Desktop\github\Major projrct\Tmodel\app.py", line 21, in <module>
+    from camera_manager import CameraManager, scan_available_cameras
+  File "C:\Users\Vishal P Khilari\Desktop\github\Major projrct\Tmodel\camera_manager.py", line 18, in <module>
+    import cv2
+ModuleNotFoundError: No module named 'cv2'
+(venv) PS C:\Users\Vishal P Khilari\Desktop\github\Major projrct\Tmodel> 
 # Windows
 venv\Scripts\activate
 # macOS/Linux
@@ -104,6 +171,22 @@ python main.py predict <image_path>
 - `eval` : Evaluate the validation set and print a confusion matrix
 - `predict <image_path>` : Run a single image through the saved model from the command line
 
+### Real-Time Live USB Mobile Camera
+
+Run the real-time desktop classifier using your USB-connected mobile phone camera:
+
+```bash
+# Auto-detect camera:
+python live_camera.py
+
+# Or specify a mobile camera index or stream:
+python live_camera.py --source 1
+python live_camera.py --source http://127.0.0.1:8080/video
+python live_camera.py --source mock   # synthetic test source
+```
+
+See [USB_MOBILE_CAMERA_SETUP.md](USB_MOBILE_CAMERA_SETUP.md) for full details on connecting via DroidCam, Iriun, IP Webcam + ADB, or Android 14+ Webcam.
+
 You can also run single-image inference directly with:
 
 ```bash
@@ -128,7 +211,9 @@ dataset/
 
 ## Core Modules
 
-- `app.py` : Flask server, image upload/predict endpoint, GenAI feedback, chatbot API
+- `app.py` : Flask server, image upload/predict endpoint, USB live camera stream & classification, GenAI feedback, chatbot API
+- `camera_manager.py` : Thread-safe USB / Mobile camera capture engine with bounded reconnection and mock testing
+- `live_camera.py` : Standalone real-time desktop HUD classifier for USB mobile camera feed
 - `main.py` : CLI entry point for training, evaluation, and prediction
 - `initialisation.py` : Model builder, device config, class labels
 - `Transforms.py` : Training/validation/inference image transformations

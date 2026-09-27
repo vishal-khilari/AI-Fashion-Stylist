@@ -3,3 +3,4 @@ pillow
 google-generativeai
 numpy
 onnxruntime
+opencv-python
