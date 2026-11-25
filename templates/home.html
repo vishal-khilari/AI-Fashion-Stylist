@@ -183,7 +183,7 @@
             padding: 28px;
             border-radius: 8px;
             width: 100%;
-            max-width: 640px;
+            max-width: 780px;
             max-height: 92vh;
             overflow-y: auto;
             text-align: center;
@@ -433,16 +433,26 @@
         #videoFeed {
             width: 100%;
             height: auto;
-            max-height: 380px;
+            max-height: 420px;
             object-fit: contain;
             display: block;
             background: #000;
         }
 
+        #liveOverlayCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
+        }
+
         #capturedImage {
             width: 100%;
             height: auto;
-            max-height: 380px;
+            max-height: 420px;
             object-fit: contain;
             border-radius: 4px;
             display: none;
@@ -453,10 +463,12 @@
             display: flex;
             gap: 10px;
             justify-content: center;
+            flex-wrap: wrap;
         }
 
         .primary-action-btn {
             flex: 1;
+            min-width: 180px;
             background: var(--accent);
             color: var(--bg);
             border: 1px solid var(--accent);
@@ -495,6 +507,131 @@
             color: var(--accent);
         }
 
+        .secondary-action-btn.active {
+            border-color: #2ecc71;
+            color: #2ecc71;
+            background: rgba(46, 204, 113, 0.1);
+        }
+
+        /* Real-Time Live Vision Two-Toggle Bar */
+        .live-controls-panel {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin: 14px 0 16px;
+        }
+
+        @media (max-width: 640px) {
+            .live-controls-panel {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .toggle-card {
+            background: rgba(22, 22, 22, 0.9);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.25s ease;
+        }
+
+        .toggle-card.active {
+            border-color: var(--accent);
+            background: rgba(201, 169, 110, 0.08);
+            box-shadow: 0 0 14px rgba(201, 169, 110, 0.12);
+        }
+
+        .toggle-card.attire-active {
+            border-color: #2ecc71;
+            background: rgba(46, 204, 113, 0.08);
+            box-shadow: 0 0 14px rgba(46, 204, 113, 0.14);
+        }
+
+        .toggle-meta {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toggle-icon {
+            font-size: 22px;
+            line-height: 1;
+        }
+
+        .toggle-text-wrap {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            text-align: left;
+        }
+
+        .toggle-name {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text);
+            letter-spacing: 0.02em;
+        }
+
+        .toggle-status-text {
+            font-size: 11px;
+            color: var(--muted);
+            letter-spacing: 0.03em;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 48px;
+            height: 25px;
+            flex-shrink: 0;
+            cursor: pointer;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            inset: 0;
+            background-color: #282828;
+            border: 1px solid var(--border);
+            border-radius: 25px;
+            transition: 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 17px;
+            width: 17px;
+            left: 3px;
+            bottom: 3px;
+            background-color: #777;
+            border-radius: 50%;
+            transition: 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .toggle-switch input:checked + .toggle-slider {
+            background-color: var(--accent);
+            border-color: var(--accent);
+        }
+
+        .toggle-switch input:checked + .toggle-slider:before {
+            transform: translateX(23px);
+            background-color: #0e0e0e;
+        }
+
+        #toggleAttireMatching:checked + .toggle-slider {
+            background-color: #2ecc71;
+            border-color: #2ecc71;
+        }
+
         /* Results Card */
         #resultsContainer {
             display: none;
@@ -516,11 +653,153 @@
             padding-bottom: 12px;
         }
 
-        .score-bars {
-            margin: 15px 0;
+        .person-count-badge {
+            font-size: 11px;
+            background: var(--accent-glow);
+            color: var(--accent);
+            padding: 4px 10px;
+            border-radius: 12px;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        /* Summary Comparison Table */
+        .summary-table-wrapper {
+            margin: 16px 0;
+            overflow-x: auto;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        .persons-summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            text-align: left;
+        }
+
+        .persons-summary-table th {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 11px 14px;
+            border-bottom: 1px solid var(--border);
+            color: var(--muted);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-size: 10.5px;
+        }
+
+        .persons-summary-table td {
+            padding: 11px 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text);
+            vertical-align: middle;
+        }
+
+        .persons-summary-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Category pills: Formal (Blue), Casual (Green), Traditional (Orange) */
+        .category-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .category-pill.formal, .category-pill[data-class="Formal"] {
+            background: rgba(43, 127, 255, 0.15);
+            border: 1px solid #2b7fff;
+            color: #2b7fff;
+        }
+
+        .category-pill.casual, .category-pill[data-class="Casual"] {
+            background: rgba(46, 204, 113, 0.15);
+            border: 1px solid #2ecc71;
+            color: #2ecc71;
+        }
+
+        .category-pill.traditional, .category-pill[data-class="Traditional"] {
+            background: rgba(255, 140, 0, 0.15);
+            border: 1px solid #ff8c00;
+            color: #ff8c00;
+        }
+
+        .match-pct-pill {
+            font-weight: 600;
+            color: var(--accent);
+        }
+
+        .low-match-badge {
+            display: inline-block;
+            font-size: 9.5px;
+            background: rgba(243, 156, 18, 0.2);
+            border: 1px solid #f39c12;
+            color: #f39c12;
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-left: 6px;
+        }
+
+        /* Multi-Person Cards Grid */
+        .person-cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 14px;
+            margin: 16px 0;
+        }
+
+        .person-card {
+            background: rgba(22, 22, 22, 0.85);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 16px;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 10px;
+            position: relative;
+            border-left: 4px solid var(--accent);
+            text-align: left;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .person-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .person-card[data-class="Formal"] { border-left-color: #2b7fff; }
+        .person-card[data-class="Casual"] { border-left-color: #2ecc71; }
+        .person-card[data-class="Traditional"] { border-left-color: #ff8c00; }
+
+        .person-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .person-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 22px;
+            font-weight: 500;
+            color: var(--text);
+        }
+
+        .person-desc {
+            font-size: 11px;
+            color: var(--muted);
+            line-height: 1.4;
+        }
+
+        .score-bars {
+            margin: 10px 0 5px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
         }
 
         .score-row {
@@ -533,12 +812,12 @@
         .score-row-label { width: 85px; color: var(--muted); }
         .score-row-bg { flex: 1; height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
         .score-row-fill { height: 100%; width: 0%; transition: width 0.8s ease; }
-        .score-row-val { width: 38px; text-align: right; color: var(--accent); }
+        .score-row-val { width: 42px; text-align: right; color: var(--accent); }
 
         .ai-feedback-box {
             background: var(--accent-soft);
             border-left: 3px solid var(--accent);
-            padding: 12px 16px;
+            padding: 14px 18px;
             border-radius: 0 4px 4px 0;
             font-size: 13px;
             line-height: 1.5;
@@ -658,33 +937,90 @@
             </div>
         </div>
 
-        <!-- Video Stream Box -->
+        <!-- Real-Time Live Vision Two-Toggle Bar -->
+        <div class="live-controls-panel">
+            <div class="toggle-card" id="cardPersonDetect">
+                <div class="toggle-meta">
+                    <span class="toggle-icon">👤</span>
+                    <div class="toggle-text-wrap">
+                        <span class="toggle-name">Person Detection</span>
+                        <span class="toggle-status-text" id="statusPersonDetect"><span style="color:var(--muted);">○ OFF</span> — Normal camera feed</span>
+                    </div>
+                </div>
+                <label class="toggle-switch" title="Toggle Real-Time Person Bounding Boxes (Mandatory when ON)">
+                    <input type="checkbox" id="togglePersonDetect">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+
+            <div class="toggle-card" id="cardAttireMatching">
+                <div class="toggle-meta">
+                    <span class="toggle-icon">👗</span>
+                    <div class="toggle-text-wrap">
+                        <span class="toggle-name">Attire Matching Level</span>
+                        <span class="toggle-status-text" id="statusAttireMatching"><span style="color:var(--muted);">○ OFF</span> — Attire details hidden</span>
+                    </div>
+                </div>
+                <label class="toggle-switch" title="Toggle Real-Time Clothing Classification and Match %">
+                    <input type="checkbox" id="toggleAttireMatching">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Video Stream Box with Live Overlay Canvas -->
         <div class="video-container">
             <video id="videoFeed" autoplay playsinline muted></video>
+            <canvas id="liveOverlayCanvas"></canvas>
             <canvas id="captureCanvas" style="display:none;"></canvas>
-            <img id="capturedImage" alt="Captured Frame" />
+            <img id="capturedImage" alt="Captured Frame with Bounding Boxes" />
         </div>
 
         <div id="loadingIndicator" style="display:none; margin: 16px 0; color: var(--accent); font-size: 13px;">
-            ✦ Analyzing outfit with AI neural network...
+            ✦ Analyzing multi-person outfits with AI neural network...
         </div>
 
-        <!-- Results Display Box -->
+        <!-- Multi-Person Results Display Box -->
         <div id="resultsContainer">
             <div class="result-header">
                 <div>
-                    <h3 id="resClass" style="font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 400;"></h3>
-                    <p id="resDesc" style="font-size: 11px; color: var(--muted); margin-top: 2px;"></p>
+                    <h3 id="resSummaryTitle" style="font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 400; color: var(--text);">Outfit Analysis</h3>
+                    <p id="resDesc" style="font-size: 11px; color: var(--muted); margin-top: 2px;">Multi-person outfit classification results</p>
                 </div>
                 <div style="text-align: right;">
-                    <span id="resConfidence" style="display: inline-block; font-size: 11px; background: var(--accent-glow); color: var(--accent); padding: 4px 10px; border-radius: 12px;"></span>
+                    <span id="resPersonCountBadge" class="person-count-badge">0 Persons</span>
                 </div>
             </div>
 
-            <div class="score-bars" id="scoreBars"></div>
+            <!-- Summary Comparison Table -->
+            <div id="summaryTableWrapper" class="summary-table-wrapper" style="display: none;">
+                <table class="persons-summary-table">
+                    <thead>
+                        <tr>
+                            <th>Person</th>
+                            <th>Attire Category</th>
+                            <th>Match %</th>
+                            <th>Score Breakdown</th>
+                        </tr>
+                    </thead>
+                    <tbody id="summaryTableBody">
+                        <!-- Populated dynamically -->
+                    </tbody>
+                </table>
+            </div>
 
+            <!-- Individual Result Cards Grid -->
+            <div id="personCardsGrid" class="person-cards-grid"></div>
+
+            <!-- Legacy fallback single person display (if needed) -->
+            <div id="legacyScoresBox" style="display:none;">
+                <div class="score-bars" id="scoreBars"></div>
+            </div>
+
+            <!-- AI Stylist Advice Box (Gemini 2.5 Flash) -->
             <div id="resFeedbackBox" class="ai-feedback-box" style="display: none;">
-                <strong>Stylist Advice:</strong> <span id="resFeedback"></span>
+                <strong style="color: var(--accent); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 4px;">✨ Stylist Feedback (Gemini AI):</strong>
+                <span id="resFeedback"></span>
             </div>
         </div>
 
@@ -706,6 +1042,14 @@
     let autoScanActive = false;
     let autoScanLoopId = null;
 
+    // Live Multi-Person Detection & Attire Matching State (Default: BOTH OFF)
+    let personDetectionActive = false;
+    let attireMatchingActive = false;
+    let liveDetectTimer = null;
+    let isDetectingLiveFrame = false;
+    let offscreenCanvas = null;
+    let lastLivePersons = [];
+
     // DOM Elements
     const openCameraBtn = document.getElementById('openCameraBtn');
     const cameraModal = document.getElementById('cameraModal');
@@ -717,6 +1061,7 @@
     const statusText = document.getElementById('statusText');
     const cameraInfoBanner = document.getElementById('cameraInfoBanner');
     const videoFeed = document.getElementById('videoFeed');
+    const liveOverlayCanvas = document.getElementById('liveOverlayCanvas');
     const captureCanvas = document.getElementById('captureCanvas');
     const capturedImage = document.getElementById('capturedImage');
     const loadingIndicator = document.getElementById('loadingIndicator');
@@ -724,6 +1069,25 @@
     const captureBtn = document.getElementById('captureBtn');
     const autoScanBtn = document.getElementById('autoScanBtn');
     const retakeBtn = document.getElementById('retakeBtn');
+
+    // Two Independent Toggles DOM Elements
+    const liveControlsPanel = document.querySelector('.live-controls-panel');
+    const togglePersonDetect = document.getElementById('togglePersonDetect');
+    const toggleAttireMatching = document.getElementById('toggleAttireMatching');
+    const cardPersonDetect = document.getElementById('cardPersonDetect');
+    const cardAttireMatching = document.getElementById('cardAttireMatching');
+    const statusPersonDetect = document.getElementById('statusPersonDetect');
+    const statusAttireMatching = document.getElementById('statusAttireMatching');
+
+    // Multi-Person Results DOM Elements
+    const resSummaryTitle = document.getElementById('resSummaryTitle');
+    const resPersonCountBadge = document.getElementById('resPersonCountBadge');
+    const resDesc = document.getElementById('resDesc');
+    const summaryTableWrapper = document.getElementById('summaryTableWrapper');
+    const summaryTableBody = document.getElementById('summaryTableBody');
+    const personCardsGrid = document.getElementById('personCardsGrid');
+    const resFeedbackBox = document.getElementById('resFeedbackBox');
+    const resFeedback = document.getElementById('resFeedback');
 
     // Debug HUD DOM Elements
     const dbgRequestedLabel = document.getElementById('dbgRequestedLabel');
@@ -1179,13 +1543,23 @@
     // -------------------------------------------------------------
     async function openModal() {
         cameraModal.style.display = 'flex';
+        // Default: both toggles OFF on open
+        personDetectionActive = false;
+        attireMatchingActive = false;
+        if (togglePersonDetect) togglePersonDetect.checked = false;
+        if (toggleAttireMatching) toggleAttireMatching.checked = false;
+        updateTogglesUI();
+        clearLiveOverlay();
         resetCaptureUI();
         await initCameraSystem();
     }
 
     function closeModal() {
         stopAutoScan();
+        stopLiveDetection();
+        clearLiveOverlay();
         stopCurrentStream();
+        if (liveControlsPanel) liveControlsPanel.style.display = 'grid';
         cameraModal.style.display = 'none';
         updateDebugHud({
             requestedLabel: '—',
@@ -1202,48 +1576,308 @@
 
     function resetCaptureUI() {
         videoFeed.style.display = 'block';
+        if (liveOverlayCanvas) liveOverlayCanvas.style.display = 'block';
+        if (liveControlsPanel) liveControlsPanel.style.display = 'grid';
         capturedImage.style.display = 'none';
         resultsContainer.style.display = 'none';
         loadingIndicator.style.display = 'none';
         captureBtn.style.display = 'block';
         autoScanBtn.style.display = 'block';
         retakeBtn.style.display = 'none';
+        clearLiveOverlay();
+        if (personDetectionActive) {
+            startLiveDetection();
+        }
     }
 
     // -------------------------------------------------------------
-    // 5. Capture & Send to AI Classifier (/predict)
+    // 5. Live Two-Toggle Control Logic & Real-Time Tracking
+    // -------------------------------------------------------------
+    function updateTogglesUI() {
+        if (!cardPersonDetect || !cardAttireMatching) return;
+
+        // Toggle 1: Person Detection UI
+        if (personDetectionActive) {
+            cardPersonDetect.classList.add('active');
+            statusPersonDetect.innerHTML = '<span style="color:#2ecc71;">● ON</span> — Live bounding boxes';
+        } else {
+            cardPersonDetect.classList.remove('active');
+            statusPersonDetect.innerHTML = '<span style="color:var(--muted);">○ OFF</span> — Normal camera feed';
+        }
+
+        // Toggle 2: Attire Matching UI
+        if (attireMatchingActive) {
+            cardAttireMatching.classList.add('attire-active');
+            statusAttireMatching.innerHTML = '<span style="color:#2ecc71;">● ON</span> — Attire categories & Match %';
+        } else {
+            cardAttireMatching.classList.remove('attire-active');
+            statusAttireMatching.innerHTML = '<span style="color:var(--muted);">○ OFF</span> — Attire details hidden';
+        }
+    }
+
+    // Toggle 1 Listener: Person Detection
+    if (togglePersonDetect) {
+        togglePersonDetect.addEventListener('change', (e) => {
+            personDetectionActive = e.target.checked;
+            console.log(`[StyleSense Controls] Person Detection toggled: ${personDetectionActive ? 'ON' : 'OFF'}`);
+
+            if (!personDetectionActive) {
+                // Rule: If Person Detection is turned OFF, Attire Matching must also turn OFF
+                attireMatchingActive = false;
+                if (toggleAttireMatching) toggleAttireMatching.checked = false;
+                stopLiveDetection();
+                clearLiveOverlay();
+            } else {
+                startLiveDetection();
+            }
+
+            updateTogglesUI();
+        });
+    }
+
+    // Toggle 2 Listener: Attire Matching Level
+    if (toggleAttireMatching) {
+        toggleAttireMatching.addEventListener('change', (e) => {
+            attireMatchingActive = e.target.checked;
+            console.log(`[StyleSense Controls] Attire Matching toggled: ${attireMatchingActive ? 'ON' : 'OFF'}`);
+
+            if (attireMatchingActive) {
+                // Rule: Enabling Attire Matching automatically enables Person Detection
+                if (!personDetectionActive) {
+                    personDetectionActive = true;
+                    if (togglePersonDetect) togglePersonDetect.checked = true;
+                }
+                startLiveDetection();
+            } else {
+                // Rule: If Attire Matching is turned OFF, keep Person Detection ON if it was already enabled
+                if (personDetectionActive && lastLivePersons.length > 0 && videoFeed.videoWidth) {
+                    drawLiveBoxes(lastLivePersons, videoFeed.videoWidth, videoFeed.videoHeight);
+                }
+            }
+
+            updateTogglesUI();
+        });
+    }
+
+    function clearLiveOverlay() {
+        if (liveOverlayCanvas) {
+            const ctx = liveOverlayCanvas.getContext('2d');
+            ctx.clearRect(0, 0, liveOverlayCanvas.width, liveOverlayCanvas.height);
+        }
+    }
+
+    function startLiveDetection() {
+        if (!personDetectionActive) return;
+        if (liveDetectTimer) clearTimeout(liveDetectTimer);
+        liveDetectTimer = setTimeout(runLiveDetectionLoop, 150);
+    }
+
+    function stopLiveDetection() {
+        if (liveDetectTimer) {
+            clearTimeout(liveDetectTimer);
+            liveDetectTimer = null;
+        }
+    }
+
+    function drawLiveBoxes(persons, vW, vH) {
+        if (!liveOverlayCanvas || !videoFeed || !personDetectionActive) {
+            clearLiveOverlay();
+            return;
+        }
+
+        const canvas = liveOverlayCanvas;
+        const ctx = canvas.getContext('2d');
+
+        // Match canvas dimensions to the displayed video element
+        const rect = videoFeed.getBoundingClientRect();
+        if (canvas.width !== Math.round(rect.width) || canvas.height !== Math.round(rect.height)) {
+            canvas.width = Math.round(rect.width);
+            canvas.height = Math.round(rect.height);
+        }
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (!persons || persons.length === 0) return;
+
+        const scaleX = canvas.width / (vW || canvas.width);
+        const scaleY = canvas.height / (vH || canvas.height);
+
+        persons.forEach(p => {
+            let x1, y1, x2, y2;
+            if (p.box_normalized && Array.isArray(p.box_normalized)) {
+                x1 = p.box_normalized[0] * canvas.width;
+                y1 = p.box_normalized[1] * canvas.height;
+                x2 = p.box_normalized[2] * canvas.width;
+                y2 = p.box_normalized[3] * canvas.height;
+            } else if (p.box && Array.isArray(p.box)) {
+                x1 = p.box[0] * scaleX;
+                y1 = p.box[1] * scaleY;
+                x2 = p.box[2] * scaleX;
+                y2 = p.box[3] * scaleY;
+            } else {
+                return;
+            }
+
+            const bw = Math.max(10, x2 - x1);
+            const bh = Math.max(10, y2 - y1);
+
+            let color;
+            let label;
+
+            if (attireMatchingActive && p.predicted_class) {
+                // When Attire Matching is ON: Use category-specific colors and show category + confidence %
+                const cls = p.predicted_class || 'Attire';
+                const conf = p.confidence !== undefined ? p.confidence : 0;
+                const isLowMatch = Boolean(p.is_low_match || conf < 45.0);
+
+                // Formal – Blue (#2b7fff), Casual – Green (#2ecc71), Traditional – Orange (#ff8c00)
+                color = p.color || (cls === 'Formal' ? '#2b7fff' : (cls === 'Casual' ? '#2ecc71' : '#ff8c00'));
+                label = `${p.person_label || ('Person ' + p.person_id)}: ${cls} (${conf.toFixed(1)}%)`;
+                if (isLowMatch) label += ' [Low Match]';
+            } else {
+                // When Attire Matching is OFF: Use neutral color and show only Person ID
+                color = '#c9a96e'; // Sleek neutral accent
+                label = `${p.person_label || ('Person ' + p.person_id)}`;
+            }
+
+            // 1. Draw Bounding Box Rectangle
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3;
+            ctx.strokeRect(x1, y1, bw, bh);
+
+            // Semi-transparent box tint
+            ctx.fillStyle = color.startsWith('#') ? (color + '18') : 'rgba(201, 169, 110, 0.08)';
+            ctx.fillRect(x1, y1, bw, bh);
+
+            // 2. Draw Label Badge
+            ctx.font = 'bold 12px "DM Mono", monospace';
+            const metrics = ctx.measureText(label);
+            const textW = metrics.width;
+            const textH = 13;
+            const padX = 7;
+            const padY = 5;
+            const badgeW = textW + padX * 2;
+            const badgeH = textH + padY * 2;
+
+            let badgeX = Math.max(0, Math.min(canvas.width - badgeW, x1));
+            let badgeY = y1 - badgeH;
+            if (badgeY < 0) {
+                badgeY = y1 + 3; // Inside box top
+            }
+
+            // Badge background
+            ctx.fillStyle = color;
+            ctx.fillRect(badgeX, badgeY, badgeW, badgeH);
+
+            // White text
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText(label, badgeX + padX, badgeY + badgeH - padY - 1);
+        });
+    }
+
+    async function runLiveDetectionLoop() {
+        if (!personDetectionActive || !activeStream || videoFeed.paused || videoFeed.ended) {
+            return;
+        }
+
+        const vW = videoFeed.videoWidth;
+        const vH = videoFeed.videoHeight;
+        if (!vW || !vH || isDetectingLiveFrame) {
+            liveDetectTimer = setTimeout(runLiveDetectionLoop, 150);
+            return;
+        }
+
+        isDetectingLiveFrame = true;
+        try {
+            // Downscale frame for ultra-fast network transport & real-time inference
+            const targetW = 384;
+            const scale = Math.min(1.0, targetW / vW);
+            const dw = Math.round(vW * scale);
+            const dh = Math.round(vH * scale);
+
+            if (!offscreenCanvas) {
+                offscreenCanvas = document.createElement('canvas');
+            }
+            offscreenCanvas.width = dw;
+            offscreenCanvas.height = dh;
+            const octx = offscreenCanvas.getContext('2d');
+            octx.drawImage(videoFeed, 0, 0, dw, dh);
+
+            const b64 = offscreenCanvas.toDataURL('image/jpeg', 0.65);
+
+            const res = await fetch('/api/camera/detect_live', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    image: b64,
+                    classify_attire: attireMatchingActive 
+                })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                if (data.success && personDetectionActive) {
+                    lastLivePersons = data.persons || [];
+                    drawLiveBoxes(lastLivePersons, vW, vH);
+                }
+            }
+        } catch (e) {
+            console.debug("[StyleSense Live Detection] Frame tick error:", e);
+        } finally {
+            isDetectingLiveFrame = false;
+            if (personDetectionActive) {
+                liveDetectTimer = setTimeout(runLiveDetectionLoop, attireMatchingActive ? 280 : 180);
+            }
+        }
+    }
+
+    // -------------------------------------------------------------
+    // 6. Capture & Send to Multi-Person AI Classifier (/predict)
     // -------------------------------------------------------------
     async function performCaptureAndPredict() {
         stopAutoScan();
+        stopLiveDetection();
+        if (liveOverlayCanvas) liveOverlayCanvas.style.display = 'none';
+        if (liveControlsPanel) liveControlsPanel.style.display = 'none';
+
         loadingIndicator.style.display = 'block';
         resultsContainer.style.display = 'none';
 
-        // Draw current frame from video feed onto canvas
-        const vW = videoFeed.videoWidth || 640;
-        const vH = videoFeed.videoHeight || 480;
+        // Draw current frame from video feed onto capture canvas
+        const vW = videoFeed.videoWidth || videoFeed.clientWidth || 640;
+        const vH = videoFeed.videoHeight || videoFeed.clientHeight || 480;
         captureCanvas.width = vW;
         captureCanvas.height = vH;
         const ctx = captureCanvas.getContext('2d');
         ctx.drawImage(videoFeed, 0, 0, vW, vH);
 
-        // Display captured snapshot preview in UI
-        const imageDataUrl = captureCanvas.toDataURL('image/jpeg', 0.9);
-        capturedImage.src = imageDataUrl;
+        // Immediate snapshot preview in UI
+        const previewUrl = captureCanvas.toDataURL('image/jpeg', 0.92);
+        capturedImage.src = previewUrl;
         videoFeed.style.display = 'none';
         capturedImage.style.display = 'block';
         captureBtn.style.display = 'none';
         autoScanBtn.style.display = 'none';
         retakeBtn.style.display = 'block';
 
-        console.log(`[StyleSense Camera] Captured frame (${vW}x${vH}). Sending to /predict endpoint...`);
+        console.log(`[StyleSense Camera] Captured frame (${vW}x${vH}). Sending to multi-person /predict...`);
 
-        // Convert canvas to JPEG blob and send to backend
         captureCanvas.toBlob(async (blob) => {
             if (!blob) {
-                loadingIndicator.style.display = 'none';
-                alert("Failed to capture image frame.");
-                resetCaptureUI();
-                return;
+                try {
+                    // Safe fallback if canvas.toBlob produced null
+                    const byteString = atob(previewUrl.split(',')[1]);
+                    const ab = new ArrayBuffer(byteString.length);
+                    const ia = new Uint8Array(ab);
+                    for (let i = 0; i < byteString.length; i++) {
+                        ia[i] = byteString.charCodeAt(i);
+                    }
+                    blob = new Blob([ab], { type: 'image/jpeg' });
+                } catch (bErr) {
+                    loadingIndicator.style.display = 'none';
+                    alert("Failed to capture image frame from camera.");
+                    resetCaptureUI();
+                    return;
+                }
             }
 
             const formData = new FormData();
@@ -1259,8 +1893,8 @@
                 loadingIndicator.style.display = 'none';
 
                 if (data.success) {
-                    console.log("[StyleSense Camera] Prediction received successfully:", data);
-                    displayResults(data);
+                    console.log("[StyleSense Camera] Multi-person prediction received:", data);
+                    displayMultiPersonResults(data);
                 } else {
                     console.error("[StyleSense Camera] Prediction error response:", data);
                     alert("Analysis error: " + (data.error || "Could not classify frame"));
@@ -1272,63 +1906,158 @@
                 alert("Network communication error.");
                 resetCaptureUI();
             }
-        }, 'image/jpeg', 0.9);
+        }, 'image/jpeg', 0.92);
     }
 
-    function displayResults(data) {
+    function displayMultiPersonResults(data) {
         resultsContainer.style.display = 'block';
-        document.getElementById('resClass').innerHTML = `${data.emoji} ${data.predicted_class}`;
-        document.getElementById('resClass').style.color = data.color;
-        document.getElementById('resDesc').innerText = data.desc;
-        document.getElementById('resConfidence').innerText = `${data.confidence}% Match`;
 
-        // Render confidence breakdown bars
-        const barsContainer = document.getElementById('scoreBars');
-        barsContainer.innerHTML = '';
-        data.scores.forEach(s => {
-            const row = document.createElement('div');
-            row.className = 'score-row';
-            row.innerHTML = `
-                <div class="score-row-label">${s.emoji} ${s.class}</div>
-                <div class="score-row-bg">
-                    <div class="score-row-fill" style="width: 0%; background: ${s.color};"></div>
+        // Update captured image to annotated version with high-res bounding boxes if provided
+        if (data.annotated_image) {
+            capturedImage.src = data.annotated_image;
+        }
+
+        const persons = data.persons || [];
+        const count = data.total_persons || persons.length;
+
+        // 1. Header & Person Count Badge
+        if (count > 1) {
+            resSummaryTitle.innerHTML = `👥 ${count} People Detected`;
+            resPersonCountBadge.innerText = `${count} People Classified`;
+            if (resDesc) resDesc.innerText = "All detected individuals have been independently cropped, classified, and analyzed below.";
+        } else if (count === 1) {
+            const p = persons[0] || {};
+            resSummaryTitle.innerHTML = `${p.emoji || '👔'} 1 Person Detected`;
+            const conf = p.confidence !== undefined ? p.confidence : 0;
+            resPersonCountBadge.innerText = `${p.predicted_class || 'Attire'} (${typeof conf === 'number' ? conf.toFixed(1) : conf}% Match)`;
+            if (resDesc) resDesc.innerText = "Individual detected, cropped, and classified by neural network.";
+        } else {
+            resSummaryTitle.innerHTML = `👗 Overall Outfit Analysis`;
+            resPersonCountBadge.innerText = "Full Frame Analyzed";
+            if (resDesc) resDesc.innerText = "No distinct people bounding boxes detected; classified entire image.";
+        }
+
+        // Scroll results into view smoothly
+        setTimeout(() => {
+            resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 120);
+
+        // 2. Summary Comparison Table
+        if (persons.length > 0) {
+            summaryTableWrapper.style.display = 'block';
+            summaryTableBody.innerHTML = '';
+
+            persons.forEach(p => {
+                const tr = document.createElement('tr');
+                const cls = p.predicted_class || 'Attire';
+                const conf = p.confidence !== undefined ? p.confidence : 0;
+                const isLow = Boolean(p.is_low_match || conf < 45.0);
+                const clsLower = cls.toLowerCase();
+
+                let breakdownBarsHtml = '';
+                if (p.scores && p.scores.length) {
+                    breakdownBarsHtml = `
+                        <div style="display:flex; gap:6px; font-size:10px; color:var(--muted); align-items:center;">
+                            ${p.scores.map(s => `
+                                <span>${s.class}: <strong style="color:${s.color}">${Math.round(s.score)}%</strong></span>
+                            `).join(' | ')}
+                        </div>
+                    `;
+                }
+
+                tr.innerHTML = `
+                    <td><strong>${p.person_label}</strong></td>
+                    <td>
+                        <span class="category-pill ${clsLower}" data-class="${cls}">
+                            ${p.emoji || ''} ${cls}
+                        </span>
+                        ${isLow ? '<span class="low-match-badge">Low Match</span>' : ''}
+                    </td>
+                    <td>
+                        <span class="match-pct-pill">${conf.toFixed(1)}%</span>
+                    </td>
+                    <td>${breakdownBarsHtml}</td>
+                `;
+                summaryTableBody.appendChild(tr);
+            });
+        } else {
+            summaryTableWrapper.style.display = 'none';
+        }
+
+        // 3. Individual Result Cards Grid
+        personCardsGrid.innerHTML = '';
+        persons.forEach((p, idx) => {
+            const card = document.createElement('div');
+            card.className = 'person-card';
+            const cls = p.predicted_class || 'Attire';
+            card.setAttribute('data-class', cls);
+
+            const isLow = Boolean(p.is_low_match || p.confidence < 45.0);
+            const clsLower = cls.toLowerCase();
+
+            let scoreRowsHtml = '';
+            if (p.scores) {
+                p.scores.forEach(s => {
+                    scoreRowsHtml += `
+                        <div class="score-row">
+                            <div class="score-row-label">${s.emoji || ''} ${s.class}</div>
+                            <div class="score-row-bg">
+                                <div class="score-row-fill" data-score="${s.score}" style="width: 0%; background: ${s.color};"></div>
+                            </div>
+                            <div class="score-row-val">${Math.round(s.score)}%</div>
+                        </div>
+                    `;
+                });
+            }
+
+            card.innerHTML = `
+                <div class="person-card-header">
+                    <span class="person-title">${p.person_label}</span>
+                    <span class="category-pill ${clsLower}" data-class="${cls}">
+                        ${p.emoji || ''} ${cls} (${p.confidence.toFixed(1)}%)
+                    </span>
                 </div>
-                <div class="score-row-val">${Math.round(s.score)}%</div>
+                <p class="person-desc">${p.desc || 'Clothing classified by neural network.'}</p>
+                ${isLow ? '<div style="color:#f39c12; font-size:11px; margin-top:-4px;">⚠️ Classification confidence is low; attire style may be mixed or partially obscured.</div>' : ''}
+                <div class="score-bars">
+                    ${scoreRowsHtml}
+                </div>
             `;
-            barsContainer.appendChild(row);
+            personCardsGrid.appendChild(card);
         });
 
-        // Animate score bars
+        // Animate score bar fills smoothly
         setTimeout(() => {
-            const fills = document.querySelectorAll('.score-row-fill');
-            data.scores.forEach((s, idx) => {
-                if (fills[idx]) fills[idx].style.width = `${s.score}%`;
+            const fills = personCardsGrid.querySelectorAll('.score-row-fill');
+            fills.forEach(f => {
+                const score = f.getAttribute('data-score');
+                if (score) f.style.width = score + '%';
             });
-        }, 100);
+        }, 80);
 
-        // Display Gemini AI Styling Feedback
+        // 4. Stylist Feedback (Gemini AI)
         if (data.ai_feedback) {
-            document.getElementById('resFeedback').innerText = data.ai_feedback;
-            document.getElementById('resFeedbackBox').style.display = 'block';
+            resFeedback.innerText = data.ai_feedback;
+            resFeedbackBox.style.display = 'block';
         } else {
-            document.getElementById('resFeedbackBox').style.display = 'none';
+            resFeedbackBox.style.display = 'none';
         }
     }
 
     // -------------------------------------------------------------
-    // 6. Auto Person Detection Scan (COCO-SSD)
+    // 7. Auto Person Detection Scan
     // -------------------------------------------------------------
     async function toggleAutoScan() {
         if (autoScanActive) {
             stopAutoScan();
         } else {
             autoScanActive = true;
-            autoScanBtn.innerText = "Scanning Person...";
+            autoScanBtn.innerText = "Scanning People...";
             autoScanBtn.style.borderColor = "var(--accent)";
             autoScanBtn.style.color = "var(--accent)";
 
             if (!cocoModel) {
-                loadingIndicator.innerText = "Loading person detection model...";
+                loadingIndicator.innerText = "Initializing auto person scanner...";
                 loadingIndicator.style.display = "block";
                 cocoModel = await cocoSsd.load();
                 loadingIndicator.style.display = "none";
@@ -1351,12 +2080,12 @@
         try {
             if (cocoModel && videoFeed && videoFeed.readyState >= 2) {
                 const predictions = await cocoModel.detect(videoFeed);
-                const person = predictions.find(p => p.class === 'person' && p.score > 0.55);
+                const people = predictions.filter(p => p.class === 'person' && p.score > 0.45);
 
-                if (person) {
-                    console.log("[StyleSense Camera] Person detected with confidence:", person.score);
-                    autoScanBtn.innerText = "Person Found! Capturing...";
-                    setTimeout(() => performCaptureAndPredict(), 400);
+                if (people.length > 0) {
+                    console.log(`[StyleSense Camera] Detected ${people.length} person(s). Triggering auto-capture...`);
+                    autoScanBtn.innerText = `${people.length} Person(s) Found! Capturing...`;
+                    setTimeout(() => performCaptureAndPredict(), 500);
                     return;
                 }
             }
@@ -1368,7 +2097,7 @@
     }
 
     // -------------------------------------------------------------
-    // 7. Event Listeners & Dynamic Device Change Detection
+    // 8. Event Listeners & Dynamic Device Change Detection
     // -------------------------------------------------------------
     openCameraBtn.addEventListener('click', openModal);
     closeModalBtn.addEventListener('click', closeModal);
@@ -1383,6 +2112,7 @@
             const device = availableVideoDevices.find(d => d.deviceId === selectedId);
             const label = device ? device.label : 'Camera';
             await startCameraStream(selectedId, label);
+            startLiveDetection();
         }
     });
 
@@ -1390,6 +2120,7 @@
     refreshCamerasBtn.addEventListener('click', async () => {
         console.log("[StyleSense Camera] Rescan requested by user.");
         await enumerateAndSelectCamera(cameraSelect.value);
+        startLiveDetection();
     });
 
     // Auto-detect when new camera devices are plugged in / unplugged
@@ -1398,6 +2129,7 @@
             console.log("[StyleSense Camera] Media device hardware change detected! Updating camera list...");
             if (cameraModal.style.display === 'flex') {
                 await enumerateAndSelectCamera(cameraSelect.value);
+                startLiveDetection();
             }
         });
     }

@@ -1,6 +1,10 @@
 flask
 pillow
-google-generativeai
+google-genai
 numpy
 onnxruntime
 opencv-python
+torch
+torchvision
+ultralytics
+lap>=0.5.12

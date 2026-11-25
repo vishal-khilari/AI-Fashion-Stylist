@@ -2,15 +2,19 @@
 app.py — Enhanced Flask Web Server for AI Fashion Stylist & Dress Classifier
 -----------------------------------------------------------------------------
 Features:
-- Dual AI inference engine: ONNX Runtime (fast, serverless) + PyTorch fallback
+- Dual AI clothing inference engine: ONNX Runtime (fast, serverless) + PyTorch fallback
+- Multi-person outfit detection & classification: Detects each individual person,
+  crops their outfit, classifies it as Formal, Casual, or Traditional, and draws
+  visually distinguishable colored bounding boxes (Formal=Blue, Casual=Green, Traditional=Orange).
 - Real-time USB / Mobile Camera live streaming & automatic frame classification
 - Localhost security guard for camera management endpoints
-- Dynamic styling feedback powered by Google Gemini GenAI
+- Dynamic styling feedback powered by Google GenAI (gemini-2.5-flash)
 - Interactive Fashion Chatbot API with structured JSON outfit recommendations
 """
 
 import io
 import os
+import base64
 import logging
 import numpy as np
 from flask import Flask, request, jsonify, render_template, Response
@@ -19,6 +23,12 @@ from urllib.parse import urlparse
 
 # Camera manager for USB / Mobile / WebRTC capture
 from camera_manager import CameraManager, scan_available_cameras
+
+# Gemini integration helper
+import gemini_helper
+
+# Multi-person detection & classification engine
+import person_detector
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -102,22 +112,29 @@ def preprocess_image_numpy(img: Image.Image) -> np.ndarray:
     return np.expand_dims(img_data, axis=0).astype(np.float32)
 
 
-# Class-specific metadata for UI enhancement
+# Class-specific metadata and color requirements:
+# Formal: Blue (#2b7fff), Casual: Green (#2ecc71), Traditional: Orange (#ff8c00)
 CLASS_META = {
     'Formal': {
         'emoji': '👔',
         'desc': 'Sophisticated attire: Suits, blazers, and elegant dresses.',
-        'color': '#4a90d9',
+        'color': '#2b7fff',       # Blue
+        'rgb': (43, 127, 255),
+        'bgr': (255, 127, 43),
     },
     'Casual': {
         'emoji': '👕',
         'desc': 'Comfortable everyday wear: T-shirts, jeans, and hoodies.',
-        'color': '#5cb85c',
+        'color': '#2ecc71',       # Green
+        'rgb': (46, 204, 113),
+        'bgr': (113, 204, 46),
     },
     'Traditional': {
         'emoji': '🥻',
         'desc': 'Cultural heritage: Ethnic wear like Sarees, Kurtas, and Sherwanis.',
-        'color': '#c07bd0',
+        'color': '#ff8c00',       # Orange
+        'rgb': (255, 140, 0),
+        'bgr': (0, 140, 255),
     },
 }
 
@@ -126,6 +143,8 @@ DEFAULT_META = {
     'emoji': '👗',
     'desc': 'Clothing item detected.',
     'color': '#c9a96e',
+    'rgb': (201, 169, 110),
+    'bgr': (110, 169, 201),
 }
 
 
@@ -152,17 +171,16 @@ def validate_camera_source(source) -> bool:
         try:
             parsed = urlparse(source)
             if parsed.scheme in ('http', 'https', 'rtsp'):
-                # Safe camera stream URL
                 return True
         except Exception:
             return False
     return False
 
 
-def run_inference_on_pil_image(img: Image.Image) -> dict:
+def run_inference_on_pil_image(img: Image.Image, generate_ai_feedback: bool = False) -> dict:
     """
-    Core AI prediction pipeline for a PIL Image.
-    Used uniformly for file uploads, live USB camera frames, and API calls.
+    Core AI prediction pipeline for a single PIL Image (full frame or crop).
+    Classifies clothing style into Formal, Casual, or Traditional.
     """
     # 1. Ensure RGB
     if img.mode != 'RGB':
@@ -198,7 +216,7 @@ def run_inference_on_pil_image(img: Image.Image) -> dict:
         meta = CLASS_META.get(class_name, DEFAULT_META)
         all_scores.append({
             'class': class_name,
-            'score': float(probs_arr[i] * 100),
+            'score': round(float(probs_arr[i] * 100), 1),
             'emoji': meta['emoji'],
             'desc': meta['desc'],
             'color': meta['color']
@@ -207,33 +225,12 @@ def run_inference_on_pil_image(img: Image.Image) -> dict:
     all_scores.sort(key=lambda x: x['score'], reverse=True)
     top_meta = CLASS_META.get(top_class, DEFAULT_META)
 
-    # 5. Gemini Styling Advice Integration
+    # 5. Optional Gemini feedback (only requested if needed, e.g. single-image inference)
     ai_feedback = None
-    gemini_api_key = os.environ.get("GEMINI_API_KEY")
-    if not gemini_api_key and os.path.exists("api_key.txt"):
-        try:
-            with open("api_key.txt", "r") as f:
-                gemini_api_key = f.read().strip()
-        except Exception:
-            pass
-
-    if gemini_api_key:
-        try:
-            import google.generativeai as genai
-            genai.configure(api_key=gemini_api_key)
-            gen_model = genai.GenerativeModel('gemini-2.5-flash')
-            prompt = (
-                f"Act as an expert fashion stylist. The user has an outfit that our AI classified "
-                f"as {top_class} with {round(top_prob * 100, 1)}% confidence. "
-                "Give a short, energetic 2-sentence fashion compliment or styling tip. Be creative and hype them up!"
-            )
-            gen_response = gen_model.generate_content(prompt)
-            ai_feedback = gen_response.text
-        except Exception as e:
-            logger.warning(f"Failed to generate AI feedback: {e}")
-            ai_feedback = "You look fantastic! (GenAI stylist is currently unavailable due to an error)."
-    else:
-        ai_feedback = "Set your GEMINI_API_KEY environment variable to get personalized GenAI styling advice!"
+    if generate_ai_feedback:
+        ai_feedback = gemini_helper.generate_outfit_advice([
+            {'person_label': 'Your outfit', 'predicted_class': top_class, 'confidence': round(top_prob * 100, 1)}
+        ])
 
     return {
         'success': True,
@@ -245,6 +242,36 @@ def run_inference_on_pil_image(img: Image.Image) -> dict:
         'scores': all_scores,
         'ai_feedback': ai_feedback
     }
+
+
+def run_multi_person_pipeline(
+    img: Image.Image,
+    generate_ai_feedback: bool = True,
+    classify_attire: bool = True
+) -> dict:
+    """
+    Run multi-person detection, crop each individual, conditionally classify their attire,
+    and attach Gemini GenAI styling advice.
+    """
+    # Run multi-person detection + individual crop classification
+    result = person_detector.process_multi_person_image(
+        img,
+        classifier_func=lambda crop: run_inference_on_pil_image(crop, generate_ai_feedback=False),
+        classify_attire=classify_attire
+    )
+
+    # Generate unified AI styling feedback for all detected persons (only if attire classified)
+    if generate_ai_feedback and classify_attire:
+        try:
+            advice = gemini_helper.generate_outfit_advice(result['persons'])
+            result['ai_feedback'] = advice
+        except Exception as e:
+            logger.warning(f"Could not generate Gemini outfit advice: {e}")
+            result['ai_feedback'] = "You look fantastic!"
+    else:
+        result['ai_feedback'] = None
+
+    return result
 
 
 # ==============================================================================
@@ -276,7 +303,8 @@ def health():
     return jsonify({
         'status': 'healthy',
         'device': str(DEVICE),
-        'camera': cam_status
+        'camera': cam_status,
+        'has_gemini_key': bool(gemini_helper.get_gemini_api_key())
     })
 
 
@@ -340,7 +368,6 @@ def video_feed():
     MJPEG live video stream route.
     Streams real-time frames from the USB mobile camera / active source.
     """
-    # Ensure camera manager is running
     if not camera_manager.is_running:
         camera_manager.start()
 
@@ -354,9 +381,8 @@ def video_feed():
 def capture_and_predict():
     """
     Grab the freshest frame directly from the active USB / Mobile camera,
-    pass it through the AI classification model, and return the prediction.
+    detect all persons, classify their attire, and return annotated predictions.
     """
-    # Check if camera manager is running
     if not camera_manager.is_running:
         camera_manager.start()
 
@@ -367,20 +393,72 @@ def capture_and_predict():
         return jsonify({'error': err_msg, 'status': status_info}), 400
 
     try:
-        result = run_inference_on_pil_image(frame_pil)
+        result = run_multi_person_pipeline(frame_pil, generate_ai_feedback=True)
         return jsonify(result)
     except Exception as e:
         logger.exception("Error during camera live prediction")
         return jsonify({'error': f"Inference failed: {str(e)}"}), 500
 
 
+@app.route('/api/camera/detect_live', methods=['POST'])
+def detect_live():
+    """
+    Fast live camera detection endpoint for real-time WebRTC or camera frame streams.
+    Supports independent Person Detection and Attire Matching toggles.
+    Uses ByteTrack / IoU tracking for stable bounding boxes across frames.
+    """
+    try:
+        data = request.get_json(silent=True) or {}
+        classify_attire = data.get('classify_attire', False)
+        if isinstance(classify_attire, str):
+            classify_attire = classify_attire.lower() in ('true', '1', 'yes', 'on')
+        else:
+            classify_attire = bool(classify_attire)
+
+        frame_pil = None
+        # Check if an image file was posted
+        if 'image' in request.files:
+            file = request.files['image']
+            frame_pil = Image.open(io.BytesIO(file.read())).convert('RGB')
+        else:
+            # Check for base64 JSON payload
+            b64_str = data.get('image')
+            if b64_str:
+                if ',' in b64_str:
+                    b64_str = b64_str.split(',', 1)[1]
+                img_bytes = base64.b64decode(b64_str)
+                frame_pil = Image.open(io.BytesIO(img_bytes)).convert('RGB')
+            else:
+                # Grab latest frame from camera manager
+                frame_pil = camera_manager.get_current_frame(as_pil=True)
+
+        if frame_pil is None:
+            return jsonify({'error': 'No image frame available for detection'}), 400
+
+        # Run real-time multi-person tracking + conditional attire classification
+        result = person_detector.track_and_process_live_frame(
+            frame_pil,
+            classifier_func=lambda crop: run_inference_on_pil_image(crop, generate_ai_feedback=False),
+            classify_attire=classify_attire
+        )
+        return jsonify(result)
+
+    except Exception as e:
+        logger.exception("Error during live camera detection")
+        return jsonify({'error': str(e)}), 500
+
+
 # ==============================================================================
-# Standard Image Upload & Chat APIs (Preserved & Backward Compatible)
+# Standard Image Upload & Chat APIs
 # ==============================================================================
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    """Handle image upload (multipart/form-data) and return style predictions."""
+    """
+    Handle image upload (multipart/form-data) with multi-person outfit detection.
+    Detects each person in the frame, classifies their attire into Formal, Casual,
+    or Traditional, and returns annotated image + per-person results.
+    """
     if 'image' not in request.files:
         return jsonify({'error': 'No image file provided'}), 400
 
@@ -395,76 +473,56 @@ def predict():
         except UnidentifiedImageError:
             return jsonify({'error': 'Invalid image format. Please upload a JPG, PNG, or WEBP.'}), 400
 
-        result = run_inference_on_pil_image(img)
+        result = run_multi_person_pipeline(img, generate_ai_feedback=True)
         return jsonify(result)
 
     except Exception as e:
-        logger.exception("Error during file prediction")
+        logger.exception("Error during multi-person file prediction")
         return jsonify({'error': f"An internal error occurred: {str(e)}"}), 500
 
 
 @app.route('/chat_api', methods=['POST'])
 def chat_api():
-    """Handle chatbot messages using Gemini."""
+    """
+    Handle chatbot messages using Gemini 2.5 Flash via google-genai.
+    Conditionally returns 3-option outfit recommendations or conversational answers based on intent.
+    """
     data = request.get_json(silent=True) or {}
     user_message = data.get('message')
+    history = data.get('history', [])
 
     if not user_message:
         return jsonify({'error': 'No message provided'}), 400
 
-    gemini_api_key = os.environ.get("GEMINI_API_KEY")
-    if not gemini_api_key and os.path.exists("api_key.txt"):
-        try:
-            with open("api_key.txt", "r") as f:
-                gemini_api_key = f.read().strip()
-        except Exception:
-            pass
+    result = gemini_helper.generate_chat_response(user_message, history=history)
+    if not result.get('success'):
+        return jsonify({'error': result.get('error', 'Failed to generate recommendations')}), 400
 
-    if not gemini_api_key:
+    if result.get('type') == 'suggestions':
         return jsonify({
-            'reply': "Please set your GEMINI_API_KEY environment variable or create an api_key.txt file to chat with the stylist!"
+            'type': 'suggestions',
+            'data': result.get('data'),
+            'reply': result.get('reply', 'Here are 3 complete looks for you: ✨')
         })
-
-    try:
-        import json
-        import google.generativeai as genai
-        genai.configure(api_key=gemini_api_key)
-        gen_model = genai.GenerativeModel('gemini-2.5-flash')
-        prompt = f"""Act as an expert AI fashion stylist. The user is asking: '{user_message}'.
-Give them exactly 3 complete styling suggestions.
-You MUST respond in pure JSON format as a list of dictionaries. Do not include any markdown backticks (like ```json), just the raw JSON array.
-Each dictionary must have exactly these keys:
-- "outfit": A simple description of the main clothing.
-- "footwear": Suggested shoes.
-- "grooming": Facial styling, grooming, or makeup suggestions.
-- "accessories": Jewelry or other accessories.
-
-Output pure JSON only."""
-        gen_response = gen_model.generate_content(prompt)
-
-        reply_text = gen_response.text.strip()
-        if reply_text.startswith("```json"):
-            reply_text = reply_text[7:-3].strip()
-        elif reply_text.startswith("```"):
-            reply_text = reply_text[3:-3].strip()
-
-        try:
-            suggestions = json.loads(reply_text)
-            return jsonify({'type': 'suggestions', 'data': suggestions})
-        except json.JSONDecodeError:
-            return jsonify({'type': 'text', 'reply': reply_text})
-
-    except Exception as e:
-        logger.warning(f"Failed to generate chat response: {e}")
-        return jsonify({'error': f"The stylist is unavailable right now. (Details: {str(e)})"}), 500
+    else:
+        return jsonify({
+            'type': 'text',
+            'reply': result.get('reply', '')
+        })
 
 
 if __name__ == '__main__':
-    # Ensure model is preloaded
+    # Ensure classification model is preloaded
     try:
         get_model()
     except Exception as e:
-        logger.warning(f"Could not preload model: {e}")
+        logger.warning(f"Could not preload dress classifier: {e}")
+
+    # Ensure person detector is preloaded
+    try:
+        person_detector.get_detector()
+    except Exception as e:
+        logger.warning(f"Could not preload person detector: {e}")
 
     # Start camera manager (defaults to first available USB/Webcam device or mock)
     try:

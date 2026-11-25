@@ -330,6 +330,168 @@
             margin-top: 15px;
             display: none;
         }
+
+        /* Summary Comparison Table */
+        .summary-table-wrapper {
+            margin: 20px 0;
+            overflow-x: auto;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        .persons-summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            text-align: left;
+        }
+
+        .persons-summary-table th {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 11px 14px;
+            border-bottom: 1px solid var(--border);
+            color: var(--muted);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-size: 10.5px;
+        }
+
+        .persons-summary-table td {
+            padding: 11px 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text);
+            vertical-align: middle;
+        }
+
+        .persons-summary-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Category pills: Formal (Blue), Casual (Green), Traditional (Orange) */
+        .category-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .category-pill.formal, .category-pill[data-class="Formal"] {
+            background: rgba(43, 127, 255, 0.15);
+            border: 1px solid #2b7fff;
+            color: #2b7fff;
+        }
+
+        .category-pill.casual, .category-pill[data-class="Casual"] {
+            background: rgba(46, 204, 113, 0.15);
+            border: 1px solid #2ecc71;
+            color: #2ecc71;
+        }
+
+        .category-pill.traditional, .category-pill[data-class="Traditional"] {
+            background: rgba(255, 140, 0, 0.15);
+            border: 1px solid #ff8c00;
+            color: #ff8c00;
+        }
+
+        .match-pct-pill {
+            font-weight: 600;
+            color: var(--accent);
+        }
+
+        .low-match-badge {
+            display: inline-block;
+            font-size: 9.5px;
+            background: rgba(243, 156, 18, 0.2);
+            border: 1px solid #f39c12;
+            color: #f39c12;
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-left: 6px;
+        }
+
+        /* Multi-Person Cards Grid */
+        .person-cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 14px;
+            margin: 20px 0;
+        }
+
+        .person-card {
+            background: rgba(22, 22, 22, 0.85);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            position: relative;
+            border-left: 4px solid var(--accent);
+            text-align: left;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .person-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .person-card[data-class="Formal"] { border-left-color: #2b7fff; }
+        .person-card[data-class="Casual"] { border-left-color: #2ecc71; }
+        .person-card[data-class="Traditional"] { border-left-color: #ff8c00; }
+
+        .person-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .person-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 20px;
+            font-weight: 500;
+            color: var(--text);
+        }
+
+        .person-desc {
+            font-size: 11px;
+            color: var(--muted);
+            line-height: 1.4;
+        }
+
+        .score-bars {
+            margin: 8px 0 4px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .score-row {
+            display: flex;
+            align-items: center;
+            font-size: 11px;
+            gap: 10px;
+        }
+
+        .score-row-label { width: 85px; color: var(--muted); }
+        .score-row-bg { flex: 1; height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+        .score-row-fill { height: 100%; width: 0%; transition: width 0.8s ease; }
+        .score-row-val { width: 42px; text-align: right; color: var(--accent); }
+
+        .ai-feedback-box {
+            background: rgba(201, 169, 110, 0.08);
+            border-left: 3px solid var(--accent);
+            padding: 14px 18px;
+            border-radius: 0 4px 4px 0;
+            font-size: 13px;
+            line-height: 1.5;
+            color: #f3efe6;
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
@@ -374,23 +536,57 @@
 
         <!-- Results State -->
         <div id="results-container">
-            <!-- Notification Banner -->
+            <!-- Annotated Image Display with Bounding Boxes -->
+            <div class="preview-box" id="result-img-box" style="position: relative; margin-bottom: 25px;">
+                <img id="annotated-result-img" src="" style="width: 100%; max-height: 520px; object-fit: contain; background: #000; display: block;" alt="Annotated Detection with Bounding Boxes">
+                <span id="detected-count-badge" style="position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.8); border: 1px solid var(--accent); color: var(--accent); font-size: 11px; padding: 4px 12px; border-radius: 12px; letter-spacing: 0.05em; backdrop-filter: blur(4px);"></span>
+            </div>
+
+            <!-- Target Category Acceptance Banner -->
             <div id="notification"></div>
 
-            <div class="main-result" style="margin-top: 25px;">
-                <div class="result-emoji" id="res-emoji">?</div>
-                <div class="result-text">
-                    <span class="confidence-tag" id="res-conf">0% Match</span>
-                    <h2 id="res-class">Unknown</h2>
-                    <p id="res-desc" style="font-size: 12px; color: var(--muted);"></p>
+            <!-- Single Person Main Result (when 1 person detected or fallback) -->
+            <div id="single-person-result">
+                <div class="main-result" style="margin-top: 25px;">
+                    <div class="result-emoji" id="res-emoji">?</div>
+                    <div class="result-text">
+                        <span class="confidence-tag" id="res-conf">0% Match</span>
+                        <h2 id="res-class">Unknown</h2>
+                        <p id="res-desc" style="font-size: 12px; color: var(--muted);"></p>
+                    </div>
+                </div>
+
+                <div class="score-list" id="score-list">
+                    <!-- Bars added dynamically -->
                 </div>
             </div>
 
-            <div class="score-list" id="score-list">
-                <!-- Bars added dynamically -->
+            <!-- Multi-Person Summary Comparison Table -->
+            <div id="upload-summary-table-wrapper" class="summary-table-wrapper" style="display: none;">
+                <div style="font-size: 11px; letter-spacing: 0.1em; color: var(--muted); text-transform: uppercase; padding: 12px 14px 4px;">Detected People Summary</div>
+                <table class="persons-summary-table">
+                    <thead>
+                        <tr>
+                            <th>Person</th>
+                            <th>Attire</th>
+                            <th>Match</th>
+                            <th>Breakdown</th>
+                        </tr>
+                    </thead>
+                    <tbody id="upload-summary-tbody"></tbody>
+                </table>
             </div>
 
-            <button style="width: 100%; margin-top: 30px;" onclick="resetUI()">Try Another</button>
+            <!-- Multi-Person Individual Cards Grid -->
+            <div id="upload-person-cards" class="person-cards-grid" style="display: none;"></div>
+
+            <!-- Gemini AI Stylist Recommendation -->
+            <div id="ai-feedback-box" class="ai-feedback-box" style="display: none;">
+                <div style="font-size: 10px; color: var(--accent); letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 6px;">✦ AI Stylist Recommendation</div>
+                <div id="ai-feedback-text"></div>
+            </div>
+
+            <button style="width: 100%; margin-top: 30px;" onclick="resetUI()">Evaluate Another Image</button>
         </div>
     </div>
 </div>
@@ -470,56 +666,189 @@
 
             if (result.error) throw new Error(result.error);
 
-            // Populate Results
-            document.getElementById('res-emoji').innerText = result.emoji;
-            document.getElementById('res-class').innerText = result.predicted_class;
-            document.getElementById('res-class').style.color = result.color;
-            document.getElementById('res-conf').innerText = result.confidence + '% Match';
-            document.getElementById('res-desc').innerText = result.desc;
+            // If annotated image with bounding boxes returned, display it
+            const resultImg = document.getElementById('annotated-result-img');
+            const countBadge = document.getElementById('detected-count-badge');
+            if (result.annotated_image) {
+                resultImg.src = result.annotated_image;
+            } else if (previewImg.src) {
+                resultImg.src = previewImg.src;
+            }
 
-            // Build Bars and calculate score for the selected category
-            const scoreList = document.getElementById('score-list');
-            scoreList.innerHTML = '';
-            
+            const totalPersons = result.total_persons || (result.persons ? result.persons.length : 1);
+            countBadge.innerText = totalPersons > 1 ? `👥 ${totalPersons} People Detected` : `👤 1 Person Detected`;
+
+            const persons = result.persons || [];
+
+            // Target category score calculation (e.g. for acceptance notification)
             let selectedCategoryScore = 0;
+            if (result.scores) {
+                result.scores.forEach(s => {
+                    if (s.class === backendTargetCategory) selectedCategoryScore = s.score;
+                });
+            }
 
-            result.scores.forEach(s => {
-                if (s.class === backendTargetCategory) {
-                    selectedCategoryScore = s.score;
-                }
-                const item = document.createElement('div');
-                item.className = 'score-item';
-                item.innerHTML = `
-                    <div class="score-label">${s.class}</div>
-                    <div class="bar-bg">
-                        <div class="bar-fill" style="width: 0%; background: ${s.color}"></div>
-                    </div>
-                    <div class="score-val">${Math.round(s.score)}%</div>
-                `;
-                scoreList.appendChild(item);
-            });
+            // Check across all persons if any person's attire meets the target category
+            const matchingPersons = persons.filter(p => p.predicted_class === backendTargetCategory);
+            const isAccepted = matchingPersons.length > 0 || selectedCategoryScore > 50;
 
-            // Set Notification based on > 50% acceptance logic
-            if (selectedCategoryScore > 50) {
+            if (isAccepted) {
+                const bestScore = matchingPersons.length > 0 
+                    ? Math.max(...matchingPersons.map(p => p.confidence)) 
+                    : selectedCategoryScore;
                 notification.className = 'notification accepted';
-                notification.innerHTML = `✓ ACCEPTED <br><span style="font-size: 11px; opacity: 0.8; font-weight: normal; margin-top: 5px; display: block;">This outfit meets the requirement for ${targetCategory} (${Math.round(selectedCategoryScore)}% match).</span>`;
+                notification.innerHTML = `✓ ACCEPTED <br><span style="font-size: 11px; opacity: 0.8; font-weight: normal; margin-top: 5px; display: block;">This outfit meets the requirement for ${targetCategory} (${Math.round(bestScore)}% match).</span>`;
             } else {
                 notification.className = 'notification rejected';
                 notification.innerHTML = `✕ REJECTED <br><span style="font-size: 11px; opacity: 0.8; font-weight: normal; margin-top: 5px; display: block;">This outfit does not meet the requirement for ${targetCategory} (Only ${Math.round(selectedCategoryScore)}% match).</span>`;
+            }
+
+            const singlePersonResult = document.getElementById('single-person-result');
+            const summaryTableWrapper = document.getElementById('upload-summary-table-wrapper');
+            const summaryTbody = document.getElementById('upload-summary-tbody');
+            const personCardsGrid = document.getElementById('upload-person-cards');
+
+            if (totalPersons > 1) {
+                // Multi-person display: Show summary table and individual cards
+                singlePersonResult.style.display = 'none';
+                summaryTableWrapper.style.display = 'block';
+                personCardsGrid.style.display = 'grid';
+
+                // Populate Summary Comparison Table
+                summaryTbody.innerHTML = '';
+                persons.forEach(p => {
+                    const tr = document.createElement('tr');
+                    const cls = p.predicted_class || 'Attire';
+                    const conf = p.confidence !== undefined ? p.confidence : 0;
+                    const isLow = Boolean(p.is_low_match || conf < 45.0);
+                    const clsLower = cls.toLowerCase();
+
+                    let breakdownHtml = '';
+                    if (p.scores && p.scores.length) {
+                        breakdownHtml = `
+                            <div style="display:flex; gap:6px; font-size:10px; color:var(--muted); align-items:center;">
+                                ${p.scores.map(s => `
+                                    <span>${s.class}: <strong style="color:${s.color}">${Math.round(s.score)}%</strong></span>
+                                `).join(' | ')}
+                            </div>
+                        `;
+                    }
+
+                    tr.innerHTML = `
+                        <td><strong>${p.person_label}</strong></td>
+                        <td>
+                            <span class="category-pill ${clsLower}" data-class="${cls}">
+                                ${p.emoji || ''} ${cls}
+                            </span>
+                            ${isLow ? '<span class="low-match-badge">Low Match</span>' : ''}
+                        </td>
+                        <td>
+                            <span class="match-pct-pill">${conf.toFixed(1)}%</span>
+                        </td>
+                        <td>${breakdownHtml}</td>
+                    `;
+                    summaryTbody.appendChild(tr);
+                });
+
+                // Populate Individual Person Cards
+                personCardsGrid.innerHTML = '';
+                persons.forEach(p => {
+                    const card = document.createElement('div');
+                    card.className = 'person-card';
+                    const cls = p.predicted_class || 'Attire';
+                    card.setAttribute('data-class', cls);
+                    const isLow = Boolean(p.is_low_match || p.confidence < 45.0);
+                    const clsLower = cls.toLowerCase();
+
+                    let scoreRowsHtml = '';
+                    if (p.scores) {
+                        p.scores.forEach(s => {
+                            scoreRowsHtml += `
+                                <div class="score-row">
+                                    <div class="score-row-label">${s.emoji || ''} ${s.class}</div>
+                                    <div class="score-row-bg">
+                                        <div class="score-row-fill" data-score="${s.score}" style="width: 0%; background: ${s.color};"></div>
+                                    </div>
+                                    <div class="score-row-val">${Math.round(s.score)}%</div>
+                                </div>
+                            `;
+                        });
+                    }
+
+                    card.innerHTML = `
+                        <div class="person-card-header">
+                            <span class="person-title">${p.person_label}</span>
+                            <span class="category-pill ${clsLower}" data-class="${cls}">
+                                ${p.emoji || ''} ${cls} (${p.confidence.toFixed(1)}%)
+                            </span>
+                        </div>
+                        <p class="person-desc">${p.desc || 'Clothing classified by neural network.'}</p>
+                        ${isLow ? '<div style="color:#f39c12; font-size:11px; margin-top:-4px;">⚠️ Low confidence prediction; attire may be mixed or partially visible.</div>' : ''}
+                        <div class="score-bars">
+                            ${scoreRowsHtml}
+                        </div>
+                    `;
+                    personCardsGrid.appendChild(card);
+                });
+
+                // Animate individual card score bars
+                setTimeout(() => {
+                    const fills = personCardsGrid.querySelectorAll('.score-row-fill');
+                    fills.forEach(f => {
+                        const score = f.getAttribute('data-score');
+                        if (score) f.style.width = score + '%';
+                    });
+                }, 100);
+
+            } else {
+                // Single person display: Keep clean single result and animated score bars
+                singlePersonResult.style.display = 'block';
+                summaryTableWrapper.style.display = 'none';
+                personCardsGrid.style.display = 'none';
+
+                document.getElementById('res-emoji').innerText = result.emoji;
+                document.getElementById('res-class').innerText = result.predicted_class;
+                document.getElementById('res-class').style.color = result.color;
+                document.getElementById('res-conf').innerText = result.confidence + '% Match';
+                document.getElementById('res-desc').innerText = result.desc;
+
+                const scoreList = document.getElementById('score-list');
+                scoreList.innerHTML = '';
+                result.scores.forEach(s => {
+                    const item = document.createElement('div');
+                    item.className = 'score-item';
+                    item.innerHTML = `
+                        <div class="score-label">${s.class}</div>
+                        <div class="bar-bg">
+                            <div class="bar-fill" style="width: 0%; background: ${s.color}"></div>
+                        </div>
+                        <div class="score-val">${Math.round(s.score)}%</div>
+                    `;
+                    scoreList.appendChild(item);
+                });
+
+                setTimeout(() => {
+                    const bars = document.querySelectorAll('.bar-fill');
+                    result.scores.forEach((s, i) => {
+                        if (bars[i]) bars[i].style.width = s.score + '%';
+                    });
+                }, 100);
+            }
+
+            // Stylist Recommendation (Gemini GenAI)
+            const aiBox = document.getElementById('ai-feedback-box');
+            const aiText = document.getElementById('ai-feedback-text');
+            if (result.ai_feedback && aiBox && aiText) {
+                aiText.innerText = result.ai_feedback;
+                aiBox.style.display = 'block';
+            } else if (aiBox) {
+                aiBox.style.display = 'none';
             }
 
             // Transition
             loader.style.display = 'none';
             resultsContainer.style.display = 'block';
             notification.style.display = 'block';
-
-            // Animate bars
-            setTimeout(() => {
-                const bars = document.querySelectorAll('.bar-fill');
-                result.scores.forEach((s, i) => {
-                    bars[i].style.width = s.score + '%';
-                });
-            }, 100);
 
         } catch (err) {
             loader.style.display = 'none';
@@ -542,7 +871,15 @@
         loader.style.display = 'none';
         errorMsg.style.display = 'none';
         notification.style.display = 'none';
-        document.getElementById('ai-feedback-box').style.display = 'none';
+        const aiBox = document.getElementById('ai-feedback-box');
+        if (aiBox) aiBox.style.display = 'none';
+        const summaryTableWrapper = document.getElementById('upload-summary-table-wrapper');
+        if (summaryTableWrapper) summaryTableWrapper.style.display = 'none';
+        const personCardsGrid = document.getElementById('upload-person-cards');
+        if (personCardsGrid) {
+            personCardsGrid.style.display = 'none';
+            personCardsGrid.innerHTML = '';
+        }
     }
 
     // Global mouse tracking for background glow

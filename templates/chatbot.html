@@ -216,6 +216,9 @@
     const sendBtn = document.getElementById('send-btn');
     const typingIndicator = document.getElementById('typing-indicator');
 
+    // Conversation history buffer for multi-turn conversational follow-ups
+    const conversationHistory = [];
+
     function handleKeyPress(e) {
         if (e.key === 'Enter') {
             sendMessage();
@@ -226,8 +229,10 @@
         const text = userInput.value.trim();
         if (!text) return;
 
-        // Add user message
+        // Add user message to UI and history
         addMessage(text, 'user');
+        conversationHistory.push({ role: 'user', text: text });
+
         userInput.value = '';
         userInput.disabled = true;
         sendBtn.disabled = true;
@@ -243,7 +248,10 @@
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ message: text })
+                body: JSON.stringify({ 
+                    message: text,
+                    history: conversationHistory.slice(-8)
+                })
             });
 
             const data = await response.json();
@@ -252,10 +260,15 @@
 
             if (data.error) {
                 addMessage("Sorry, " + data.error, 'bot');
+                conversationHistory.push({ role: 'assistant', text: "Sorry, " + data.error });
             } else if (data.type === 'suggestions') {
-                addSuggestionCards(data.data);
+                addSuggestionCards(data.data, data.reply);
+                // Summarize recommendations in history so follow-up questions understand which options were given
+                const summary = data.data.map((s, idx) => `Option ${idx + 1}: ${s.outfit} with ${s.footwear}.`).join(" ");
+                conversationHistory.push({ role: 'assistant', text: summary });
             } else {
                 addMessage(data.reply, 'bot');
+                conversationHistory.push({ role: 'assistant', text: data.reply });
             }
         } catch (err) {
             typingIndicator.style.display = 'none';
@@ -267,7 +280,7 @@
         userInput.focus();
     }
 
-    function addSuggestionCards(suggestions) {
+    function addSuggestionCards(suggestions, customHeader) {
         const container = document.createElement('div');
         container.className = `message bot`;
         container.style.maxWidth = '100%';
@@ -276,7 +289,7 @@
         container.style.padding = '0';
         
         let header = document.createElement('div');
-        header.innerText = "Here are 3 complete looks for you: ✨";
+        header.innerText = customHeader || "Here are 3 complete looks for you: ✨";
         header.style.marginBottom = '10px';
         container.appendChild(header);
 
